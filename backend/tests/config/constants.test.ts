@@ -9,10 +9,6 @@ describe('Constants namespace', () => {
     expect(Constants.SESSION_SECRET).toBeDefined();
   });
 
-  it('Defines a SSL_KEYS_DIR', () => {
-    expect(Constants.SSL_KEYS_DIR).toBeDefined();
-  });
-
   it('Defines a FRONTEND', () => {
     expect(Constants.FRONTEND).toBeDefined();
   });
