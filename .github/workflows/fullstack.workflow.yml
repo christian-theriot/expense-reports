@@ -1,0 +1,36 @@
+name: Full Stack
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup environment for backend tests
+        run: |
+          touch backend/.env
+          echo PORT="${{ secrets.BACKEND_PORT }}" >> backend/.env
+          echo SESSION_SECRET="${{ secrets.BACKEND_SESSION_SECRET }}" >> backend/.env
+          echo FRONTEND="../../../frontend/build" >> backend/.env
+          echo DATABASE_URL="postgres://test:test@localhost:5432/test" >> backend/.env
+      - name: Setup postgres
+        run: |
+          sudo apt-get update
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get -y install postgresql-12 postgresql-client-12
+          echo "sudo pg_ctlcluster 12 main start"
+          sudo pg_ctlcluster 12 main start
+          echo "sudo service postgresql restart"
+          sudo service postgresql restart
+          sudo su - postgres -c "psql -c \"create user test with password 'test' createdb;\""
+          sudo su - postgres -c "psql -c \"create database test;\""
+      - name: Install dependencies
+        run: npm i
+      - name: Run tests
+        run: npm t
