@@ -1,1 +1,4 @@
-console.log('Hello Server');
+import { App } from './app';
+
+const app = new App();
+app.start();

@@ -4,7 +4,7 @@ module.exports = {
     '^.+\\.(ts|tsx)$': 'ts-jest'
   },
   testEnvironment: 'node',
-  modulePathIgnorePatterns: ['tests/utils'],
+  modulePathIgnorePatterns: ['__tests__/utils'],
   testPathIgnorePatterns: ['/node_modules', '/coverage', '/build'],
   collectCoverageFrom: ['src/**/*.ts', '!src/index.ts']
 };

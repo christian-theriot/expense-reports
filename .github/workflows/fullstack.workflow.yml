@@ -16,20 +16,21 @@ jobs:
           echo PORT="${{ secrets.BACKEND_PORT }}" >> backend/.env
           echo SESSION_SECRET="${{ secrets.BACKEND_SESSION_SECRET }}" >> backend/.env
           echo FRONTEND="../../../frontend/build" >> backend/.env
-          echo DATABASE_URL="postgres://test:test@localhost:5432/test" >> backend/.env
-      - name: Setup postgres
+          echo DATABASE_URL="mongodb://localhost:27017/expense-reports?authSource=admin" >> backend/.env
+          mkdir -p backend/keys
+          echo "${{ secrets.SSH_KEY_PEM }}" >> backend/keys/key.pem
+          echo "${{ secrets.SSH_CERT_PEM }}" >> backend/keys/cert.pem
+      - name: Setup mongodb
         run: |
           sudo apt-get update
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-          echo "deb http://apt.postgresql.org/pub/repos/apt/ `lsb_release -cs`-pgdg main" |sudo tee  /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get install -y gnupg
+          wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
           sudo apt-get update
-          sudo apt-get -y install postgresql-12 postgresql-client-12
-          echo "sudo pg_ctlcluster 12 main start"
-          sudo pg_ctlcluster 12 main start
-          echo "sudo service postgresql restart"
-          sudo service postgresql restart
-          sudo su - postgres -c "psql -c \"create user test with password 'test' createdb;\""
-          sudo su - postgres -c "psql -c \"create database test;\""
+          sudo apt-get install -y mongodb-org
+          ps --no-headers -o comm 1
+          sudo service mongod start
+          sudo service mongod status
       - name: Install dependencies
         run: npm i
       - name: Run tests

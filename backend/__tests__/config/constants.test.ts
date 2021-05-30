@@ -20,4 +20,8 @@ describe('Constants namespace', () => {
   it('Defines a PRODUCTION', () => {
     expect(Constants.PRODUCTION).toBeDefined();
   });
+
+  it('Defines a SESSION_TIMEOUT', () => {
+    expect(Constants.SESSION_TIMEOUT).toBeDefined();
+  });
 });
