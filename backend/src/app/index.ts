@@ -47,7 +47,8 @@ export class App {
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
 
-    this._app.use(cors({ origin: `http://localhost:${Constants.PORT}`, credentials: true }));
+    this._app.use(cors({ origin: `https://expense-reports.theriot.dev`, credentials: true }));
+
     this._app.use(
       session({
         secret: Constants.SESSION_SECRET,
@@ -72,7 +73,6 @@ export class App {
     this._app.use('/transaction', Routes.Transaction());
 
     this._app.use(express.static(path.join(__dirname, Constants.FRONTEND)));
-
     this._app.get('*', (_, res) => {
       console.log(path.join(__dirname, Constants.FRONTEND, 'index.html'));
       res.sendFile(path.join(__dirname, Constants.FRONTEND, 'index.html'));
