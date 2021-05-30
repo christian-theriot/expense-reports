@@ -46,7 +46,7 @@ export class App {
     this._app.use(herokuSslRedirect());
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
-    this._app.use(
+    /*    this._app.use(
       cors({
         origin: [
           `http://localhost:${Constants.PORT}`,
@@ -55,7 +55,7 @@ export class App {
         ],
         credentials: true
       })
-    );
+    );*/
     this._app.use(
       session({
         secret: Constants.SESSION_SECRET,
