@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import * as Models from '../models';
 import * as Routes from '../routes';
+import herokuSslRedirect from 'heroku-ssl-redirect';
 import MongoStore from 'connect-mongo';
 
 export class App {
@@ -42,6 +43,7 @@ export class App {
 
     this._app = express();
 
+    this._app.use(herokuSslRedirect());
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
     this._app.use(cors({ origin: `http://localhost:${Constants.PORT}`, credentials: true }));
