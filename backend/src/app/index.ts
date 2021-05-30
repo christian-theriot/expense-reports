@@ -47,7 +47,14 @@ export class App {
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
     this._app.use(
-      cors({ origin: `https://expense-reports-production.herokuapp.com`, credentials: true })
+      cors({
+        origin: [
+          `http://localhost:${Constants.PORT}`,
+          'https://expense-reports-production.herokuapp.com',
+          /\.theriot\.dev$/
+        ],
+        credentials: true
+      })
     );
     this._app.use(
       session({
