@@ -86,10 +86,10 @@ export class App {
     this._app.use('/user', Routes.User(this._passport));
     this._app.use('/transaction', Routes.Transaction());
 
-    this._app.use(express.static(path.join(__dirname, Constants.FRONTEND)));
+    this._app.use(express.static(Constants.FRONTEND));
     this._app.get('*', (_, res) => {
-      console.log(path.join(__dirname, Constants.FRONTEND, 'index.html'));
-      res.sendFile(path.join(__dirname, Constants.FRONTEND, 'index.html'));
+      console.log(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
+      res.sendFile(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
     });
   }
 
