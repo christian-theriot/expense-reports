@@ -49,35 +49,21 @@ export class App {
 
     this._app.use(cors({ origin: `https://expense-reports.theriot.dev`, credentials: true }));
 
-    try {
-      this._app.use(
-        session({
-          secret: Constants.SESSION_SECRET,
-          resave: true,
-          saveUninitialized: true,
-          cookie: { maxAge: Constants.SESSION_TIMEOUT },
-          store: MongoStore.create({
-            mongoUrl: Constants.DATABASE_URL,
-            mongoOptions: {
-              useUnifiedTopology: true,
-              useNewUrlParser: true
-            }
-          })
+    this._app.use(
+      session({
+        secret: Constants.SESSION_SECRET,
+        resave: true,
+        saveUninitialized: true,
+        cookie: { maxAge: Constants.SESSION_TIMEOUT },
+        store: MongoStore.create({
+          mongoUrl: Constants.DATABASE_URL,
+          mongoOptions: {
+            useUnifiedTopology: true,
+            useNewUrlParser: true
+          }
         })
-      );
-    } catch (err) {
-      console.log(err);
-      console.log(Constants.DATABASE_URL);
-
-      this._app.use(
-        session({
-          secret: Constants.SESSION_SECRET,
-          resave: true,
-          saveUninitialized: true,
-          cookie: { maxAge: Constants.SESSION_TIMEOUT }
-        })
-      );
-    }
+      })
+    );
     this._app.use(cookieParser());
 
     this._app.use(this._passport.initialize());
@@ -88,6 +74,7 @@ export class App {
 
     this._app.use(express.static(Constants.FRONTEND));
     this._app.get('*', (_, res) => {
+      console.log(Constants.DATABASE_URL);
       console.log(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
       res.sendFile(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
     });
