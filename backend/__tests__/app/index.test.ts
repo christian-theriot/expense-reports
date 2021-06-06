@@ -44,10 +44,6 @@ describe('App class', () => {
     expect(app.https).toBeDefined();
   });
 
-  it('Has a passport getter', () => {
-    expect(app.passport).toBeDefined();
-  });
-
   it('Can request another page to render the frontend', async () => {
     await makeRequest({
       then: async res => expect(res.text).toMatch(/<div id="root">/i),

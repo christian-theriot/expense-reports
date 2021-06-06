@@ -2,18 +2,15 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import passport from 'passport';
-import { Strategy as LocalStrategy } from 'passport-local';
+import { Auth } from '../../src/services';
 import { Constants } from '../config';
 import http from 'http';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
-import * as Models from '../models';
 import * as Routes from '../routes';
 
 export class App {
-  private _passport: passport.PassportStatic;
   private _app: express.Express;
   private _server: {
     http?: http.Server;
@@ -22,27 +19,6 @@ export class App {
 
   constructor() {
     this._server = {};
-    this._passport = passport;
-    this._passport.use(
-      new LocalStrategy(async function (username, password, done) {
-        try {
-          const user = await Models.User.findOne({ username });
-          if (user && user.authenticate(password)) done(null, user);
-
-          done(null, false);
-        } catch (err) {
-          done(err);
-        }
-      })
-    );
-    this._passport.serializeUser(function (user: any, done) {
-      done(null, user._id);
-    });
-    this._passport.deserializeUser(async function (user: any, done) {
-      Models.User.findById(user)
-        .then(user => done(null, user))
-        .catch(err => done(err));
-    });
 
     this._app = express();
 
@@ -58,10 +34,9 @@ export class App {
       })
     );
     this._app.use(cookieParser());
-    this._app.use(this._passport.initialize());
-    this._app.use(this._passport.session());
-    this._app.use('/user', Routes.User(this._passport));
-    this._app.use('/transaction', Routes.Transaction());
+    Auth.setup(this._app);
+    this._app.use('/user', Routes.User);
+    this._app.use('/transaction', Routes.Transaction);
     this._app.use(express.static(path.resolve(__dirname, '../../../frontend/build')));
     this._app.get('*', (_, res) => {
       res.sendFile(path.resolve(__dirname, '../../../frontend/build/index.html'));
@@ -80,10 +55,6 @@ export class App {
       endpoint: this._server.https,
       server: this._app
     };
-  }
-
-  get passport() {
-    return this._passport;
   }
 
   start(run_https = false) {

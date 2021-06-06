@@ -1,14 +1,10 @@
 import * as Controllers from '../controllers';
 import { Router } from 'express';
 
-export function Transaction() {
-  const transaction = Router();
+export const Transaction = Router();
 
-  transaction.post('/create', Controllers.Transaction.create);
-  transaction.post('/update/:id', Controllers.Transaction.update);
-  transaction.get('/:id', Controllers.Transaction.findOne);
-  transaction.post('/find', Controllers.Transaction.findMany);
-  transaction.delete('/:id', Controllers.Transaction.deleteOne);
-
-  return transaction;
-}
+Transaction.post('/create', Controllers.Transaction.create);
+Transaction.post('/update/:id', Controllers.Transaction.update);
+Transaction.get('/:id', Controllers.Transaction.findOne);
+Transaction.post('/find', Controllers.Transaction.findMany);
+Transaction.delete('/:id', Controllers.Transaction.deleteOne);

@@ -1,14 +1,10 @@
 import * as Controllers from '../controllers';
-import { PassportStatic } from 'passport';
+import { Auth } from '../services';
 import { Router } from 'express';
 
-export function User(passport: PassportStatic) {
-  const user = Router();
+export const User = Router();
 
-  user.post('/register', Controllers.User.register);
-  user.post('/login', passport.authenticate('local'), Controllers.User.login);
-  user.post('/update', Controllers.User.setTransactions);
-  user.get('/logout', Controllers.User.logout);
-
-  return user;
-}
+User.post('/register', Controllers.User.register);
+User.post('/login', Auth.service.authenticate('local'), Controllers.User.login);
+User.post('/update', Controllers.User.setTransactions);
+User.get('/logout', Controllers.User.logout);
