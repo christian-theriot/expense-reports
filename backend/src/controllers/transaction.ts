@@ -115,4 +115,28 @@ export namespace Transaction {
       HTTP.Error.InternalServerError(res, err);
     }
   }
+
+  export async function findOne(req: Request, res: Response, next: NextFunction) {
+    const id = req.params.id;
+
+    if (!HTTP.authorized(req, res, true)) {
+      return next();
+    }
+
+    try {
+      if (!(await userOwnsTransaction(req, res, id))) {
+        return next();
+      }
+
+      const transaction = await Models.Transaction.findById(id);
+      HTTP.Success.OK(res, {
+        name: transaction!.name,
+        amount: transaction!.amount,
+        type: transaction!.type,
+        date: transaction!.date
+      });
+    } catch (err) {
+      HTTP.Error.InternalServerError(res, err);
+    }
+  }
 }

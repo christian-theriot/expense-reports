@@ -245,16 +245,93 @@ describe('Transaction controller', () => {
       user!.transactions.push(user!._id);
       jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(user);
     },
-    then: async res => {
-      expect(res.body.name).toBe('MongoError');
-    },
+    then: async res => expect(res.body.name).toBe('MongoError'),
     authenticated: true,
     app,
     method: 'POST',
     url: '/transaction/update/1',
     json: true,
-    data: {
-      input: { amount: 2, type: [TransactionType.Dog], date: '2021-02-17' }
-    }
+    data: { input: { amount: 2, type: [TransactionType.Dog], date: '2021-02-17' } }
+  });
+
+  Status.Error.Unauthorized({
+    app,
+    method: 'GET',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'User is unauthorized to perform this action' } }
+  });
+
+  Status.Error.NotFound({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
+    },
+    authenticated: true,
+    app,
+    method: 'GET',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'User could not be found' } }
+  });
+
+  Status.Success.OK({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      user!.transactions.push(user!._id);
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(user);
+    },
+    authenticated: true,
+    app,
+    method: 'GET',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { name: 'name', amount: 1, type: [] } }
+  });
+
+  Status.Error.InternalServerError({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      jest
+        .spyOn(Models.User, 'findById')
+        .mockResolvedValueOnce(user)
+        .mockRejectedValueOnce({ reason: 'Internal server error' });
+    },
+    authenticated: true,
+    app,
+    method: 'GET',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'Internal server error' } }
   });
 });
