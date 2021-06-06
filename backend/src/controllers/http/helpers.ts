@@ -58,3 +58,18 @@ export async function userOwnsTransaction(req: Request, res: Response, id: strin
 
   return true;
 }
+
+export async function userOwnsTransactions(req: Request, res: Response, transactions: string[]) {
+  const user = await Models.User.findById(req.user!._id);
+  if (!user) {
+    Error.NotFound(res, { reason: 'User could not be found' });
+    return false;
+  }
+
+  if (transactions.some(id => !user.transactions.some(txa => txa === id))) {
+    Error.Unauthorized(res, { reason: 'User is unauthorized to perform this action' });
+    return false;
+  }
+
+  return true;
+}

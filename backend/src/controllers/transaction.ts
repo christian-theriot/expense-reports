@@ -139,4 +139,35 @@ export namespace Transaction {
       HTTP.Error.InternalServerError(res, err);
     }
   }
+
+  export async function findMany(req: Request, res: Response, next: NextFunction) {
+    const { ids }: { ids: string[] } = req.body;
+
+    if (!HTTP.validField(res, ids, 'ids', 'object')) {
+      return next();
+    }
+
+    if (!HTTP.authorized(req, res, true)) {
+      return next();
+    }
+
+    try {
+      if (!(await HTTP.userOwnsTransactions(req, res, ids))) {
+        return next();
+      }
+
+      const transactions = await Models.Transaction.find({ _id: ids });
+      HTTP.Success.OK(res, {
+        transactions: transactions.map(txa => ({
+          id: `${txa._id}`,
+          name: txa.name,
+          amount: txa.amount,
+          type: txa.type,
+          date: txa.date
+        }))
+      });
+    } catch (err) {
+      HTTP.Error.InternalServerError(res, err);
+    }
+  }
 }
