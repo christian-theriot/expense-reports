@@ -11,19 +11,20 @@ import fs from 'fs';
 import path from 'path';
 import * as Models from '../models';
 import * as Routes from '../routes';
-import herokuSslRedirect from 'heroku-ssl-redirect';
-import MongoStore from 'connect-mongo';
 
 export class App {
   private _passport: passport.PassportStatic;
   private _app: express.Express;
-  private _http?: http.Server;
-  private _https?: https.Server;
+  private _server: {
+    http?: http.Server;
+    https?: https.Server;
+  };
 
   constructor() {
+    this._server = {};
     this._passport = passport;
     this._passport.use(
-      new LocalStrategy(async (username, password, done) => {
+      new LocalStrategy(async function (username, password, done) {
         try {
           const user = await Models.User.findOne({ username });
           if (user && user.authenticate(password)) done(null, user);
@@ -34,8 +35,10 @@ export class App {
         }
       })
     );
-    this._passport.serializeUser((user: any, done) => done(null, user._id));
-    this._passport.deserializeUser(async (user: any, done) => {
+    this._passport.serializeUser(function (user: any, done) {
+      done(null, user._id);
+    });
+    this._passport.deserializeUser(async function (user: any, done) {
       Models.User.findById(user)
         .then(user => done(null, user))
         .catch(err => done(err));
@@ -43,53 +46,38 @@ export class App {
 
     this._app = express();
 
-    this._app.use(herokuSslRedirect());
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
-
-    this._app.use(cors({ origin: `https://expense-reports.theriot.dev`, credentials: true }));
-
+    this._app.use(cors({ origin: `http://localhost:${Constants.PORT}`, credentials: true }));
     this._app.use(
       session({
         secret: Constants.SESSION_SECRET,
         resave: true,
         saveUninitialized: true,
-        cookie: { maxAge: Constants.SESSION_TIMEOUT },
-        store: MongoStore.create({
-          mongoUrl: Constants.DATABASE_URL,
-          mongoOptions: {
-            useUnifiedTopology: true,
-            useNewUrlParser: true
-          }
-        })
+        cookie: { maxAge: Constants.SESSION_TIMEOUT }
       })
     );
     this._app.use(cookieParser());
-
     this._app.use(this._passport.initialize());
     this._app.use(this._passport.session());
-
     this._app.use('/user', Routes.User(this._passport));
     this._app.use('/transaction', Routes.Transaction());
-
-    this._app.use(express.static(Constants.FRONTEND));
+    this._app.use(express.static(path.resolve(__dirname, '../../../frontend/build')));
     this._app.get('*', (_, res) => {
-      console.log(Constants.DATABASE_URL);
-      console.log(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
-      res.sendFile(path.resolve(__dirname, Constants.FRONTEND, 'index.html'));
+      res.sendFile(path.resolve(__dirname, '../../../frontend/build/index.html'));
     });
   }
 
   get http() {
     return {
-      endpoint: this._http,
+      endpoint: this._server.http,
       server: this._app
     };
   }
 
   get https() {
     return {
-      endpoint: this._https,
+      endpoint: this._server.https,
       server: this._app
     };
   }
@@ -98,11 +86,11 @@ export class App {
     return this._passport;
   }
 
-  start(asHttps = false) {
+  start(run_https = false) {
     this.stop();
 
-    if (asHttps) {
-      this._https = https
+    if (run_https) {
+      this._server.https = https
         .createServer(
           {
             key: fs.readFileSync(path.join(__dirname, '../../keys/key.pem')),
@@ -112,19 +100,19 @@ export class App {
         )
         .listen(Constants.PORT);
     } else {
-      this._http = this._app.listen(Constants.PORT);
+      this._server.http = this._app.listen(Constants.PORT);
     }
   }
 
   stop() {
-    if (this._http) {
-      this._http.close();
-      this._http = undefined;
+    if (this._server.http) {
+      this._server.http.close();
+      this._server.http = undefined;
     }
 
-    if (this._https) {
-      this._https.close();
-      this._https = undefined;
+    if (this._server.https) {
+      this._server.https.close();
+      this._server.https = undefined;
     }
   }
 }

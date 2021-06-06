@@ -1,261 +1,202 @@
-import { App } from '../../src/app';
-import { Status } from '../utils';
+import * as Status from '../utils';
 import * as Models from '../../src/models';
+import { App } from '../../src/app';
 import { Database } from '../../src/services';
+import { makeRequest } from '../utils';
 
-describe('User API', () => {
-  let app: App = new App();
-  let db: Database = new Database();
+describe('User controller', () => {
+  let app = new App();
 
   beforeAll(async () => {
-    await db.connect();
+    await Database.connect();
     await Models.User.deleteMany({});
+    await new Models.User({
+      username: 'test',
+      password: '$Ecr3t1234'
+    }).save();
   });
+
   afterAll(async () => {
     await Models.User.deleteMany({});
-    await db.disconnect();
+    await Database.disconnect();
   });
-  afterEach(() => jest.clearAllMocks());
 
-  Status.Error.InvalidArgument.Test({
+  Status.Error.BadRequest({
     app,
     method: 'POST',
     url: '/user/register',
     json: true,
-    data: { output: { reason: 'username must be provided as a string' } }
+    data: { output: { reason: 'username should be a string' } }
   });
 
-  Status.Error.InvalidArgument.Test({
+  Status.Error.BadRequest({
     app,
     method: 'POST',
     url: '/user/register',
     json: true,
     data: {
       input: { username: 'test' },
-      output: { reason: 'password must be provided as a string' }
+      output: { reason: 'password should be a string' }
     }
   });
 
-  Status.Error.Unauthorized.Test({
-    before: async () =>
-      jest.spyOn(Models.User, 'findOne').mockResolvedValueOnce({} as Models.IUser),
-    app,
-    method: 'POST',
-    url: '/user/register',
-    json: true,
-    data: {
-      input: { username: 'test', password: '$Ecr3t1234' },
-      output: { reason: 'User is unauthorized to perform this action' }
-    }
-  });
-
-  Status.CreatedResource.Test({
-    then: async res => expect(res.body.id.length).toBe(24),
-    app,
-    method: 'POST',
-    url: '/user/register',
-    json: true,
-    data: {
-      input: { username: 'test', password: '$Ecr3t1234' }
-    }
-  });
-
-  Status.Error.InternalServerError.Test({
-    before: async () => jest.spyOn(Models.User, 'findOne').mockRejectedValueOnce(null),
-    app,
-    method: 'POST',
-    url: '/user/register',
-    json: true,
-    data: {
-      input: { username: 'test', password: '$Ecr3t1234' },
-      output: { reason: 'Internal server error' }
-    }
-  });
-
-  Status.Error.Unauthorized.Test({
-    app,
-    method: 'POST',
-    url: '/user/transactions',
-    json: true,
-    data: { output: { reason: 'User is unauthorized to perform this action' } }
-  });
-
-  Status.Error.InvalidArgument.Test({
+  Status.Error.BadRequest({
     authenticated: true,
     app,
     method: 'POST',
-    url: '/user/transactions',
+    url: '/user/register',
     json: true,
-    data: { output: { reason: 'transactions must be provided as a list of ids' } }
+    data: {
+      input: { username: 'test', password: 'invalid' },
+      output: { reason: 'User should not be authorized to perform this action' }
+    }
   });
 
-  Status.Error.NotFound.Test({
-    before: async () => {
-      const user = await Models.User.findOne({ username: 'test' });
-      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
-    },
+  Status.Error.BadRequest({
+    app,
+    method: 'POST',
+    url: '/user/register',
+    json: true,
+    data: {
+      input: { username: 'test', password: 'invalid' },
+      output: { reason: 'User already exists' }
+    }
+  });
+
+  Status.Success.CreatedResource({
+    then: async res => expect(res.body.id).toMatch(/.{24}/),
+    app,
+    method: 'POST',
+    url: '/user/register',
+    json: true,
+    data: { input: { username: 'new', password: '$Ecr3t1234' } }
+  });
+
+  Status.Error.InternalServerError({
     then: async res => {
-      expect(res.body.reason).toMatch(/user with id '.{24}' could not be found/i);
+      expect(res.body.message).toMatch(/user validation failed/i);
     },
-    authenticated: true,
     app,
     method: 'POST',
-    url: '/user/transactions',
+    url: '/user/register',
     json: true,
-    data: { input: { transactions: [] } }
+    data: { input: { username: 'invalid', password: 'invalid' } }
   });
 
-  Status.Success.Test({
-    then: async () => {
-      const user = await Models.User.findOne({ username: 'test' });
-      expect(Array.from(user ? user.transactions : [])).toEqual(['0123456789abcdefghijklmn']);
-    },
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/transactions',
-    json: true,
-    data: {
-      input: { transactions: ['0123456789abcdefghijklmn'] },
-      output: { reason: 'User has been updated' }
-    }
-  });
-
-  Status.Error.InternalServerError.Test({
-    before: async () => {
-      const user = await Models.User.findOne({ username: 'test' });
-      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockRejectedValueOnce(null);
-    },
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/transactions',
-    json: true,
-    data: { input: { transactions: [] }, output: { reason: 'Internal server error' } }
-  });
-
-  Status.Error.Unauthorized.Test({
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: { output: { reason: 'User is unauthorized to perform this action' } }
-  });
-
-  Status.Error.InvalidArgument.Test({
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: { output: { reason: 'previous password must be provided as a string' } }
-  });
-
-  Status.Error.InvalidArgument.Test({
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: {
-      input: { previous: 'invalid' },
-      output: { reason: 'new password must be provided as a string' }
-    }
-  });
-
-  Status.Error.NotFound.Test({
-    before: async () => {
-      const user = await Models.User.findOne({ username: 'test' });
-      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
-    },
-    then: async res => {
-      expect(res.body.reason).toMatch(/user with id '.{24}' could not be found/i);
-    },
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: {
-      input: { previous: 'invalid', current: 'invalid' }
-    }
-  });
-
-  Status.Error.Unauthorized.Test({
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: {
-      input: { previous: 'invalid', current: 'invalid' },
-      output: { reason: 'User is unauthorized to perform this action' }
-    }
-  });
-
-  Status.Success.Test({
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: {
-      input: { previous: '$Ecr3t1234', current: '$Ecr3t1234' },
-      output: { reason: 'User has been updated' }
-    }
-  });
-
-  Status.Error.InternalServerError.Test({
-    before: async () => {
-      const user = await Models.User.findOne({ username: 'test' });
-      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockRejectedValueOnce(null);
-    },
-    authenticated: true,
-    app,
-    method: 'POST',
-    url: '/user/reset-password',
-    json: true,
-    data: {
-      input: { previous: 'invalid', current: 'invalid' },
-      output: { reason: 'Internal server error' }
-    }
-  });
-
-  Status.Error.Unauthorized.Test({
+  Status.Error.BadRequest({
     app,
     method: 'POST',
     url: '/user/login',
-    data: { input: { username: 'test', password: 'invalid' }, output: {} }
+    data: {}
   });
 
-  Status.Error.Unauthorized.Test({
-    before: async () => {
-      jest.spyOn(Models.User, 'findOne').mockRejectedValueOnce(null);
-    },
+  Status.Error.Unauthorized({
     app,
     method: 'POST',
     url: '/user/login',
-    data: { input: { username: 'test', password: 'invalid' }, output: {} }
+    data: { input: { username: 'test', password: 'invalid' } }
   });
 
-  Status.Error.InternalServerError.Test({
-    before: async () => {
-      jest.spyOn(Models.User, 'findById').mockRejectedValueOnce(null);
-    },
-    authenticated: true,
+  Status.Success.OK({
+    then: async res => expect(res.body.id).toMatch(/.{24}/),
     app,
     method: 'POST',
     url: '/user/login',
-    data: { input: { username: 'test', password: 'invalid' }, output: {} }
+    json: true,
+    data: { input: { username: 'test', password: '$Ecr3t1234' } }
   });
 
-  Status.Success.Test({
+  Status.Success.OK({
     app,
     method: 'GET',
     url: '/user/logout',
     json: true,
+    data: { output: { reason: 'User has logged out' } }
+  });
+
+  Status.Success.OK({
+    then: async res => {
+      await makeRequest({
+        then: async res => {
+          expect(res.body.message).toMatch(/user validation failed/i);
+        },
+        cookie: res.headers['set-cookie'],
+        app,
+        method: 'POST',
+        url: '/user/register',
+        status: 500,
+        data: {
+          input: { username: 'invalid', password: 'invalid' }
+        }
+      });
+    },
+    authenticated: true,
+    app,
+    method: 'GET',
+    url: '/user/logout',
+    json: true,
+    data: {}
+  });
+
+  Status.Error.BadRequest({
+    app,
+    method: 'POST',
+    url: '/user/update',
+    json: true,
+    data: { output: { reason: 'transactions should be a object' } }
+  });
+
+  Status.Error.Unauthorized({
+    app,
+    method: 'POST',
+    url: '/user/update',
+    json: true,
     data: {
-      output: { reason: 'User has logged out' }
+      input: { transactions: [] },
+      output: { reason: 'User is unauthorized to perform this action' }
     }
+  });
+
+  Status.Error.NotFound({
+    before: async () => {
+      const user = await Models.User.findOne({ username: 'test' });
+      jest.spyOn(Models.User, 'findOne').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
+    },
+    authenticated: true,
+    app,
+    method: 'POST',
+    url: '/user/update',
+    json: true,
+    data: { input: { transactions: [] }, output: { reason: 'User could not be found' } }
+  });
+
+  Status.Success.OK({
+    before: async () => {
+      const user = await Models.User.findOne({ username: 'test' });
+      expect(Array.from(user!.transactions)).toEqual([]);
+    },
+    after: async () => {
+      const user = await Models.User.findOne({ username: 'test' });
+      expect(Array.from(user!.transactions)).toEqual(['id']);
+    },
+    authenticated: true,
+    app,
+    method: 'POST',
+    url: '/user/update',
+    json: true,
+    data: { input: { transactions: ['id'] }, output: { reason: 'Set transactions for user' } }
+  });
+
+  Status.Error.InternalServerError({
+    before: async () => {
+      const user = await Models.User.findOne({ username: 'test' });
+      jest.spyOn(Models.User, 'findOne').mockResolvedValueOnce(user).mockRejectedValueOnce(null);
+    },
+    authenticated: true,
+    app,
+    method: 'POST',
+    url: '/user/update',
+    json: true,
+    data: { input: { transactions: [] }, output: { reason: 'Internal server error' } }
   });
 });

@@ -1,13 +1,11 @@
 import * as Controllers from '../controllers';
 import { Router } from 'express';
 
-export const Transaction = () => {
-  const txa = Router();
+export function Transaction() {
+  const transaction = Router();
 
-  txa.post('/create', Controllers.Transaction.create);
-  txa.post('/update', Controllers.Transaction.update);
-  txa.get('/:id', Controllers.Transaction.find);
-  txa.delete('/:id', Controllers.Transaction.delete);
+  transaction.post('/create', Controllers.Transaction.create);
+  transaction.post('/update/:id', Controllers.Transaction.update);
 
-  return txa;
-};
+  return transaction;
+}

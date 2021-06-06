@@ -1,31 +1,26 @@
 import mongoose from 'mongoose';
-import { Constants } from '../../src/config';
+import MongoStore from 'connect-mongo';
 import { Database } from '../../src/services';
 
+jest.mock('mongoose');
+jest.mock('connect-mongo');
+
 describe('Database service', () => {
-  let db: Database;
+  it('Can connect', async () => {
+    await Database.connect();
 
-  beforeEach(() => {
-    db = new Database();
+    expect(mongoose.connect).toHaveBeenCalled();
   });
 
-  afterEach(async () => {
-    await db.disconnect();
+  it('Has a store', () => {
+    Database.store;
+
+    expect(MongoStore.create).toHaveBeenCalled();
   });
 
-  it('Connects to the database successfully', async () => {
-    jest.spyOn(mongoose, 'connect');
+  it('Can disconnect', async () => {
+    await Database.disconnect();
 
-    await db.connect();
-
-    expect(mongoose.connect).toBeCalled();
-  });
-
-  it('Disconnects from the database successfully', async () => {
-    jest.spyOn(mongoose, 'disconnect');
-
-    await db.disconnect();
-
-    expect(mongoose.disconnect).toBeCalled();
+    expect(mongoose.disconnect).toHaveBeenCalled();
   });
 });

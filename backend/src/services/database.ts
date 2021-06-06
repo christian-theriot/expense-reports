@@ -1,16 +1,27 @@
 import mongoose from 'mongoose';
+import MongoStore from 'connect-mongo';
 import { Constants } from '../config';
 
 export class Database {
-  async connect() {
+  static async connect() {
     await mongoose.connect(Constants.DATABASE_URL, {
-      useCreateIndex: true,
+      useUnifiedTopology: true,
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useCreateIndex: true
     });
   }
 
-  async disconnect() {
+  static async disconnect() {
     await mongoose.disconnect();
+  }
+
+  static get store() {
+    return MongoStore.create({
+      mongoUrl: Constants.DATABASE_URL,
+      mongoOptions: {
+        useUnifiedTopology: true,
+        useNewUrlParser: true
+      }
+    });
   }
 }

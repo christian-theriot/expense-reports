@@ -1,1 +1,2 @@
-export * from './status';
+export * from './httpStatus';
+export * from './makeRequest';

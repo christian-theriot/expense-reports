@@ -1,15 +1,14 @@
 import * as Controllers from '../controllers';
-import { Router } from 'express';
 import { PassportStatic } from 'passport';
+import { Router } from 'express';
 
-export const User = (passport: PassportStatic) => {
+export function User(passport: PassportStatic) {
   const user = Router();
 
   user.post('/register', Controllers.User.register);
   user.post('/login', passport.authenticate('local'), Controllers.User.login);
-  user.post('/transactions', Controllers.User.updateTransactions);
-  user.post('/reset-password', Controllers.User.updatePassword);
+  user.post('/update', Controllers.User.setTransactions);
   user.get('/logout', Controllers.User.logout);
 
   return user;
-};
+}

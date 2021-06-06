@@ -1,8 +1,8 @@
-import { Document, model, Schema, Types } from 'mongoose';
+import { Document, Schema, model } from 'mongoose';
 
 export enum TransactionType {
+  Deposit = 'Deposit',
   Dog = 'Dog',
-  Donation = 'Donation',
   Education = 'Education',
   Electricity = 'Electricity',
   Entertainment = 'Entertainment',
@@ -34,11 +34,17 @@ export const TransactionSchema = new Schema<ITransaction>(
     },
     amount: {
       type: Number,
-      required: true
+      required: true,
+      set: (amount: number) => {
+        if (!amount) throw new Error('Amount must be nonzero');
+
+        return amount;
+      }
     },
     type: {
       type: [String],
-      required: true
+      required: true,
+      default: []
     },
     date: {
       type: String,

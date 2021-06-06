@@ -1,27 +1,13 @@
 import { Constants } from '../../src/config';
 
-describe('Constants namespace', () => {
-  it('Defines a PORT', () => {
-    expect(Constants.PORT).toBeDefined();
+const testConstant = (name: string, value: any, type: string) => {
+  test(`Constants.${name} is a ${typeof value}`, () => {
+    expect(typeof value).toBe(type);
   });
+};
 
-  it('Defines a SESSION_SECRET', () => {
-    expect(Constants.SESSION_SECRET).toBeDefined();
-  });
-
-  it('Defines a FRONTEND', () => {
-    expect(Constants.FRONTEND).toBeDefined();
-  });
-
-  it('Defines a DATABASE_URL', () => {
-    expect(Constants.DATABASE_URL).toBeDefined();
-  });
-
-  it('Defines a PRODUCTION', () => {
-    expect(Constants.PRODUCTION).toBeDefined();
-  });
-
-  it('Defines a SESSION_TIMEOUT', () => {
-    expect(Constants.SESSION_TIMEOUT).toBeDefined();
-  });
-});
+testConstant('PORT', Constants.PORT, 'number');
+testConstant('SESSION_SECRET', Constants.SESSION_SECRET, 'string');
+testConstant('DATABASE_URL', Constants.DATABASE_URL, 'string');
+testConstant('PRODUCTION', Constants.PRODUCTION, 'boolean');
+testConstant('SESSION_TIMEOUT', Constants.SESSION_TIMEOUT, 'number');
