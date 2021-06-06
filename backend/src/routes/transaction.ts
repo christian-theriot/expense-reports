@@ -8,6 +8,7 @@ export function Transaction() {
   transaction.post('/update/:id', Controllers.Transaction.update);
   transaction.get('/:id', Controllers.Transaction.findOne);
   transaction.post('/find', Controllers.Transaction.findMany);
+  transaction.delete('/:id', Controllers.Transaction.deleteOne);
 
   return transaction;
 }

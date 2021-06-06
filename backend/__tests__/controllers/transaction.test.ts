@@ -2,7 +2,6 @@ import * as Status from '../utils';
 import * as Models from '../../src/models';
 import { App } from '../../src/app';
 import { Database } from '../../src/services';
-import { makeRequest } from '../utils';
 import { TransactionType } from '../../src/models';
 
 describe('Transaction controller', () => {
@@ -16,6 +15,8 @@ describe('Transaction controller', () => {
       password: '$Ecr3t1234'
     }).save();
   });
+
+  afterEach(() => jest.restoreAllMocks());
 
   afterAll(async () => {
     await Models.User.deleteMany({});
@@ -69,6 +70,20 @@ describe('Transaction controller', () => {
       input: { name: 'name', amount: 1 },
       output: { reason: 'User is unauthorized to perform this action' }
     }
+  });
+
+  Status.Success.CreatedResource({
+    before: async () => {
+      const user = await Models.User.findOne({ username: 'test' });
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
+    },
+    then: async res => expect(res.body.id).toMatch(/.{24}/),
+    authenticated: true,
+    app,
+    method: 'POST',
+    url: '/transaction/create',
+    json: true,
+    data: { input: { name: 'name', amount: 1 } }
   });
 
   Status.Success.CreatedResource({
@@ -431,5 +446,132 @@ describe('Transaction controller', () => {
     url: '/transaction/find',
     json: true,
     data: { input: { ids: ['id'] }, output: { reason: 'Internal server error' } }
+  });
+
+  Status.Error.Unauthorized({
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'User is unauthorized to perform this action' } }
+  });
+
+  Status.Error.NotFound({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(null);
+    },
+    authenticated: true,
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'User could not be found' } }
+  });
+
+  Status.Success.OK({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(null);
+
+      user!.transactions.push(user!._id);
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(user);
+    },
+    authenticated: true,
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'Transaction has been deleted' } }
+  });
+
+  Status.Success.OK({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      user!.transactions.push(user!._id);
+      jest
+        .spyOn(Models.User, 'findById')
+        .mockResolvedValueOnce(user)
+        .mockResolvedValueOnce(user)
+        .mockResolvedValueOnce(null);
+    },
+    authenticated: true,
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'Transaction has been deleted' } }
+  });
+
+  Status.Success.OK({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      user!.transactions.push(user!._id);
+      jest.spyOn(Models.User, 'findById').mockResolvedValueOnce(user).mockResolvedValueOnce(user);
+    },
+    authenticated: true,
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'Transaction has been deleted' } }
+  });
+
+  Status.Error.InternalServerError({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.url = `/transaction/${user!._id}`;
+
+      jest.spyOn(Models.Transaction, 'findById').mockResolvedValueOnce(
+        new Models.Transaction({
+          _id: user!._id,
+          name: 'name',
+          amount: 1
+        })
+      );
+
+      jest
+        .spyOn(Models.User, 'findById')
+        .mockResolvedValueOnce(user)
+        .mockRejectedValueOnce({ reason: 'Internal server error' });
+    },
+    authenticated: true,
+    app,
+    method: 'DELETE',
+    url: '/transaction/1',
+    json: true,
+    data: { output: { reason: 'Internal server error' } }
   });
 });

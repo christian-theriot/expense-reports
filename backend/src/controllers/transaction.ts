@@ -41,6 +41,11 @@ export namespace Transaction {
         date
       }).save();
 
+      const user = await Models.User.findById(req.user!._id);
+      if (user) {
+        user.transactions.push(transaction._id);
+      }
+
       HTTP.Success.CreatedResource(res, { id: transaction!._id });
     } catch (err) {
       HTTP.Error.InternalServerError(res, err);
@@ -166,6 +171,35 @@ export namespace Transaction {
           date: txa.date
         }))
       });
+    } catch (err) {
+      HTTP.Error.InternalServerError(res, err);
+    }
+  }
+
+  export async function deleteOne(req: Request, res: Response, next: NextFunction) {
+    const id = req.params.id;
+
+    if (!HTTP.authorized(req, res, true)) {
+      return next();
+    }
+
+    try {
+      if (!(await userOwnsTransaction(req, res, id))) {
+        return next();
+      }
+
+      const transaction = await Models.Transaction.findById(id);
+      if (transaction) {
+        await transaction.delete();
+
+        const user = await Models.User.findById(req.user!._id);
+        if (user) {
+          user.transactions.splice(user.transactions.indexOf(id), 1);
+          await user.save();
+        }
+      }
+
+      HTTP.Success.OK(res, { reason: 'Transaction has been deleted' });
     } catch (err) {
       HTTP.Error.InternalServerError(res, err);
     }
