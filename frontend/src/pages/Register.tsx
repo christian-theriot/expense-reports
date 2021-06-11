@@ -24,7 +24,7 @@ export const Register = withRouter(function Register(props) {
         props.history.push('/');
       }
     });
-  }, [dispatch, props]);
+  }, [dispatch, props.history]);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUser({
