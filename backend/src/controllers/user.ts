@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 export namespace User {
   export async function register(req: Request, res: Response, next: NextFunction) {
     const { username, password }: { username: string; password: string } = req.body;
+    console.log({ username, password, id: req.user?._id });
 
     if (!HTTP.validField(res, username, 'username', 'string')) {
       return next();
@@ -30,12 +31,17 @@ export namespace User {
 
       HTTP.Success.CreatedResource(res, { id: user._id });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }
 
   export function login(req: Request, res: Response) {
-    HTTP.Success.OK(res, { id: `${req.user!._id}`, transactions: req.user!.transactions });
+    HTTP.Success.OK(res, {
+      id: `${req.user!._id}`,
+      username: req.user!.username,
+      transactions: req.user!.transactions
+    });
   }
 
   export function logout(req: Request, res: Response) {
@@ -66,7 +72,20 @@ export namespace User {
 
       HTTP.Success.OK(res, { reason: 'Set transactions for user' });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res);
+    }
+  }
+
+  export async function session(req: Request, res: Response, next: NextFunction) {
+    if (req.user && req.user._id) {
+      HTTP.Success.OK(res, {
+        id: req.user._id,
+        username: req.user.username,
+        transactions: req.user.transactions
+      });
+    } else {
+      HTTP.Error.Unauthorized(res);
     }
   }
 }

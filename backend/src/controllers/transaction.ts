@@ -48,6 +48,7 @@ export namespace Transaction {
 
       HTTP.Success.CreatedResource(res, { id: transaction!._id });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }
@@ -117,6 +118,7 @@ export namespace Transaction {
 
       HTTP.Success.OK(res, { reason: 'Transaction has been updated' });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }
@@ -141,6 +143,7 @@ export namespace Transaction {
         date: transaction!.date
       });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }
@@ -172,6 +175,7 @@ export namespace Transaction {
         }))
       });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }
@@ -201,6 +205,7 @@ export namespace Transaction {
 
       HTTP.Success.OK(res, { reason: 'Transaction has been deleted' });
     } catch (err) {
+      console.log({ err });
       HTTP.Error.InternalServerError(res, err);
     }
   }

@@ -24,7 +24,7 @@ export class App {
 
     this._app.use(express.json());
     this._app.use(express.urlencoded({ extended: true }));
-    this._app.use(cors({ origin: `http://localhost:${Constants.PORT}`, credentials: true }));
+    this._app.use(cors({ origin: `localhost:${Constants.PORT}`, credentials: true }));
     this._app.use(
       session({
         secret: Constants.SESSION_SECRET,

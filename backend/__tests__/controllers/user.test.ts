@@ -199,4 +199,29 @@ describe('User controller', () => {
     json: true,
     data: { input: { transactions: [] }, output: { reason: 'Internal server error' } }
   });
+
+  Status.Success.OK({
+    before: async options => {
+      const user = await Models.User.findOne({ username: 'test' });
+      options.data.output = {
+        id: `${user!._id}`,
+        username: 'test',
+        transactions: Array.from(user!.transactions)
+      };
+    },
+    authenticated: true,
+    app,
+    method: 'GET',
+    url: '/user/session',
+    json: true,
+    data: { output: { id: 'id', username: 'test', transactions: [] } }
+  });
+
+  Status.Error.Unauthorized({
+    app,
+    method: 'GET',
+    url: '/user/session',
+    json: true,
+    data: { output: { reason: 'User is unauthorized to perform this action' } }
+  });
 });

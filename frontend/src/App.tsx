@@ -1,15 +1,19 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import * as Page from './pages';
+import { Switch, Route } from 'react-router-dom';
 
 function App() {
   return (
-    <div className='App'>
-      <header className='App-header'>
-        <img src={logo} className='App-logo' alt='logo' />
-        <h1>Hello from V2!</h1>
-      </header>
-    </div>
+    <Switch>
+      <Route
+        exact
+        path='/'
+        component={() => {
+          return null;
+        }}
+      />
+      <Route path='/login' component={Page.Login} />
+      <Route path='/register' component={Page.Register} />
+    </Switch>
   );
 }
 

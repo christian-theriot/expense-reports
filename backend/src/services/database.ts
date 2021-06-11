@@ -7,7 +7,8 @@ export class Database {
     await mongoose.connect(Constants.DATABASE_URL, {
       useUnifiedTopology: true,
       useNewUrlParser: true,
-      useCreateIndex: true
+      useCreateIndex: true,
+      useFindAndModify: false
     });
   }
 

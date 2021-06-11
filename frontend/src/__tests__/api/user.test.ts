@@ -33,12 +33,15 @@ describe('User API', () => {
   it('POST /user/login -> 200', async () => {
     jest.spyOn(axios, 'post').mockResolvedValueOnce({
       status: 200,
-      data: { id: 'id' }
+      data: { id: 'id', username: 'user', transactions: [] }
     });
 
     const response = await User.login('username', 'password');
 
-    expect(response).toEqual({ status: 200, data: { id: 'id' } });
+    expect(response).toEqual({
+      status: 200,
+      data: { id: 'id', username: 'user', transactions: [] }
+    });
   });
 
   it('POST /user/login -> 401', async () => {
@@ -95,6 +98,36 @@ describe('User API', () => {
     });
 
     const response = await User.logout();
+
+    expect(response).toEqual({
+      status: 401,
+      data: { reason: 'User is unauthorized to perform this action' }
+    });
+  });
+
+  it('GET /user/session -> 200', async () => {
+    jest.spyOn(axios, 'get').mockResolvedValueOnce({
+      status: 200,
+      data: { id: 'id', username: 'user', transactions: [] }
+    });
+
+    const response = await User.session();
+
+    expect(response).toEqual({
+      status: 200,
+      data: { id: 'id', username: 'user', transactions: [] }
+    });
+  });
+
+  it('GET /user/session -> 401', async () => {
+    jest.spyOn(axios, 'get').mockRejectedValueOnce({
+      response: {
+        status: 401,
+        data: { reason: 'User is unauthorized to perform this action' }
+      }
+    });
+
+    const response = await User.session();
 
     expect(response).toEqual({
       status: 401,

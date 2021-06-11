@@ -9,8 +9,10 @@ export namespace User {
         { withCredentials: true }
       );
 
+      console.log(response);
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log(err.response);
       return { status: err.response.status, data: err.response.data };
     }
   }
@@ -46,6 +48,16 @@ export namespace User {
   export async function logout() {
     try {
       const response = await axios.get('/user/logout', { withCredentials: true });
+
+      return { status: response.status, data: response.data };
+    } catch (err) {
+      return { status: err.response.status, data: err.response.data };
+    }
+  }
+
+  export async function session() {
+    try {
+      const response = await axios.get('/user/session', { withCredentials: true });
 
       return { status: response.status, data: response.data };
     } catch (err) {
