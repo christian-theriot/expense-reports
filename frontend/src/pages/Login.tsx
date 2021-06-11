@@ -21,7 +21,7 @@ export const Login = withRouter(function Login(props) {
         props.history.push('/');
       }
     });
-  }, []);
+  }, [dispatch, props]);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     setUser({

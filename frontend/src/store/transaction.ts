@@ -24,7 +24,4 @@ export const Transaction = createSlice({
   }
 });
 
-export default {
-  reducer: Transaction.reducer,
-  actions: Transaction.actions
-};
+export default Transaction;

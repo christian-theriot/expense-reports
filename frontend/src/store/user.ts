@@ -35,7 +35,4 @@ export const User = createSlice({
   }
 });
 
-export default {
-  reducer: User.reducer,
-  actions: User.actions
-};
+export default User;
