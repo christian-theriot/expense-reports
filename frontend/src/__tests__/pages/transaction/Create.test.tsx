@@ -12,7 +12,7 @@ const renderCreateView = () => {
 
   const { component } = renderComponent(<Create hide={onHide} />);
 
-  const date = component.getByLabelText('date') as HTMLSelectElement;
+  const date = component.getByLabelText('date') as HTMLInputElement;
   const name = component.getByLabelText('name') as HTMLInputElement;
   const amount = component.getByLabelText('amount') as HTMLInputElement;
   const type = component.getByLabelText('type') as HTMLSelectElement;

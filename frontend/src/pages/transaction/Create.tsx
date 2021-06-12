@@ -4,7 +4,7 @@ import * as API from '../../api';
 import { useDispatch } from 'react-redux';
 
 export interface ICreateProps {
-  hide?: () => void;
+  hide: () => void;
 }
 
 export function Create(props: ICreateProps) {
@@ -66,7 +66,7 @@ export function Create(props: ICreateProps) {
   const onCancel = (e: MouseEvent) => {
     e.preventDefault();
 
-    props.hide!();
+    props.hide();
   };
 
   return (

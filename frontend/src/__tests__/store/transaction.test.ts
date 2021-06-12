@@ -43,4 +43,27 @@ describe('Transaction store', () => {
 
     expect(State.current.transactions).toEqual([]);
   });
+
+  it('Can update name', () => {
+    store.dispatch(Transaction.actions.set([{ id: 1, name: 'name', amount: 1 }]));
+    store.dispatch(Transaction.actions.update({ id: 1, name: 'new name' }));
+
+    expect(State.current.transactions).toEqual([{ id: 1, name: 'new name', amount: 1 }]);
+  });
+
+  it('Can update other values', () => {
+    store.dispatch(Transaction.actions.set([{ id: 1, name: 'name' }]));
+    store.dispatch(Transaction.actions.update({ id: 1, amount: 1, date: '2021-06-01', type: [] }));
+
+    expect(State.current.transactions).toEqual([
+      { id: 1, name: 'name', amount: 1, date: '2021-06-01', type: [] }
+    ]);
+  });
+
+  it('Can fail to update any transaction', () => {
+    store.dispatch(Transaction.actions.clear());
+    store.dispatch(Transaction.actions.update({ id: 1 }));
+
+    expect(State.current.transactions).toEqual([]);
+  });
 });

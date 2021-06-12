@@ -1,6 +1,7 @@
+import userEvent from '@testing-library/user-event';
 import { View } from '../../../pages/transaction';
 import store, { Transaction, TransactionType } from '../../../store';
-import { renderComponent } from '../../utils';
+import { renderComponent, waitFor } from '../../utils';
 
 const renderView = () => {
   const { component } = renderComponent(<View />);
@@ -36,6 +37,7 @@ describe('View Transactions page', () => {
     store.dispatch(
       Transaction.actions.set([
         {
+          id: '1',
           date: '2021-06-01',
           name: 'Rent Payment',
           type: ['Rent'],
@@ -66,6 +68,7 @@ describe('View Transactions page', () => {
     store.dispatch(
       Transaction.actions.set([
         {
+          id: '1',
           name: 'Spotify Premium',
           amount: -5,
           type: ['Entertainment']
@@ -95,6 +98,7 @@ describe('View Transactions page', () => {
     store.dispatch(
       Transaction.actions.set([
         {
+          id: '1',
           name: 'Spotify Premium',
           amount: -5,
           type: ['Entertainment', 'Subscription']
@@ -124,6 +128,7 @@ describe('View Transactions page', () => {
     store.dispatch(
       Transaction.actions.set([
         {
+          id: '1',
           name: 'No type',
           amount: 1
         }
@@ -146,5 +151,47 @@ describe('View Transactions page', () => {
       amount: '1',
       type: ''
     });
+  });
+
+  it('Clicking the update button shows the Update Transaction view', async () => {
+    store.dispatch(
+      Transaction.actions.set([
+        {
+          id: '1',
+          name: 'name',
+          amount: 1
+        }
+      ])
+    );
+
+    const { view } = renderView();
+    const updateButton = view.getByLabelText('update');
+
+    userEvent.click(updateButton);
+
+    await waitFor(() => expect(view.getByLabelText('cancel update')).toBeInTheDocument());
+  });
+
+  it('Clicking the cancel button shows the normal view again', async () => {
+    store.dispatch(
+      Transaction.actions.set([
+        {
+          id: '1',
+          name: 'name',
+          amount: 1
+        }
+      ])
+    );
+
+    const { view } = renderView();
+    let updateButton = view.getByLabelText('update');
+
+    userEvent.click(updateButton);
+
+    const cancelButton = view.getByLabelText('cancel update');
+
+    userEvent.click(cancelButton);
+
+    await waitFor(() => expect(view.getByLabelText('update')).toBeInTheDocument());
   });
 });

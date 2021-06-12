@@ -20,6 +20,22 @@ export const Transaction = createSlice({
     },
     clear(state) {
       state.splice(0, state.length);
+    },
+    update(state, action) {
+      const idx = state.findIndex(txa => txa.id === action.payload.id);
+
+      if (idx !== -1) {
+        if (action.payload.name) {
+          state[idx].name = action.payload.name;
+        }
+
+        if (action.payload.amount) {
+          state[idx].amount = action.payload.amount;
+        }
+
+        state[idx].date = action.payload.date;
+        state[idx].type = action.payload.type;
+      }
     }
   }
 });
