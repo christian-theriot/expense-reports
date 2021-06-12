@@ -3,6 +3,7 @@ import { Document, Schema, model } from 'mongoose';
 export enum TransactionType {
   Deposit = 'Deposit',
   Dog = 'Dog',
+  Donation = 'Donation',
   Education = 'Education',
   Electricity = 'Electricity',
   Entertainment = 'Entertainment',

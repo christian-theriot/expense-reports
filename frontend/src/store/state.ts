@@ -1,6 +1,7 @@
 export enum TransactionType {
   Deposit = 'Deposit',
   Dog = 'Dog',
+  Donation = 'Donation',
   Education = 'Education',
   Electricity = 'Electricity',
   Entertainment = 'Entertainment',
@@ -16,6 +17,26 @@ export enum TransactionType {
   Wifi = 'Wifi',
   Withdrawal = 'Withdrawal'
 }
+
+export const TRANSACTION_TYPES = [
+  'Deposit',
+  'Dog',
+  'Donation',
+  'Education',
+  'Electricity',
+  'Entertainment',
+  'Food',
+  'Gas',
+  'Groceries',
+  'Health',
+  'Income',
+  'Phone',
+  'Rent',
+  'Subscription',
+  'Transfer',
+  'Wifi',
+  'Withdrawal'
+];
 
 export interface IUser {
   id: string;
