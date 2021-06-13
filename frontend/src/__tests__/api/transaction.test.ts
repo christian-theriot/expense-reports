@@ -1,116 +1,122 @@
-import { Transaction } from '../../api';
-import axios from 'axios';
+import * as API from '../../api';
+import store, { State, Transaction, User } from '../../store';
+import { Mock } from '../utils/mock';
 
-describe('Transaction API', () => {
-  afterEach(() => {
+describe('Transaction api', () => {
+  beforeAll(() => {
     jest.restoreAllMocks();
+    jest.spyOn(console, 'log').mockImplementation();
+  });
+  beforeEach(() => {
+    store.dispatch(Transaction.actions.clear());
+    store.dispatch(User.actions.clear());
   });
 
-  it('POST /transaction/create -> 201', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValueOnce({
-      status: 201,
-      data: { id: 'id' }
-    });
+  it('.create: POST /transaction/create -> 201', async () => {
+    Mock.API.Success.CreatedResource('post', [{ id: '1' }]);
 
-    const response = await Transaction.create({ name: 'name', amount: 0, type: [] });
+    const response = await API.Transaction.create({ name: 'name', amount: 1, type: [] });
 
-    expect(response).toEqual({ status: 201, data: { id: 'id' } });
+    expect(response).toEqual({ status: 201, data: { id: '1' } });
+    expect(State.current.transactions).toEqual([{ id: '1', name: 'name', amount: 1, type: [] }]);
+    expect(State.current.user.transactions).toEqual(['1']);
   });
 
-  it('POST /transaction/create -> 500', async () => {
-    jest.spyOn(axios, 'post').mockRejectedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
+  it('.create: POST /transaction/create -> 401', async () => {
+    Mock.API.Error.Unauthorized('post');
+
+    const response = await API.Transaction.create({ name: 'name', amount: 1, type: [] });
+
+    expect(response).toEqual({
+      status: 401,
+      data: { reason: 'User is unauthorized to perform this action' }
     });
-
-    const response = await Transaction.create({ name: 'name', amount: 0, type: [] });
-
-    expect(response).toEqual({ status: 500, data: { reason: 'Internal server error' } });
   });
 
-  it('POST /transaction/update -> 200', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValueOnce({
-      status: 200,
-      data: { reason: 'Transaction has been updated' }
-    });
+  it('.update: POST /transaction/update/<id> -> 200', async () => {
+    Mock.API.Success.OK('post');
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
 
-    const response = await Transaction.update({ id: 'id', name: 'name', amount: 0, type: [] });
+    const response = await API.Transaction.update({ id: '1', name: 'name' });
 
-    expect(response).toEqual({ status: 200, data: { reason: 'Transaction has been updated' } });
+    expect(response).toEqual({ status: 200 });
+    expect(State.current.transactions).toEqual([{ id: '1', name: 'name' }]);
   });
 
-  it('POST /transaction/update -> 500', async () => {
-    jest.spyOn(axios, 'post').mockRejectedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
+  it('.update: POST /transaction/update/<id> -> 401', async () => {
+    Mock.API.Error.Unauthorized('post');
+
+    const response = await API.Transaction.update({ id: '1', name: 'name' });
+
+    expect(response).toEqual({
+      status: 401,
+      data: { reason: 'User is unauthorized to perform this action' }
     });
-
-    const response = await Transaction.update({ id: 'id', name: 'name', amount: 0, type: [] });
-
-    expect(response).toEqual({ status: 500, data: { reason: 'Internal server error' } });
+    expect(State.current.transactions).toEqual([]);
   });
 
-  it('GET /transaction/id -> 200', async () => {
-    jest.spyOn(axios, 'get').mockResolvedValueOnce({
-      status: 200,
-      data: { name: 'name', amount: 0, type: [] }
-    });
+  it('.findOne: GET /transaction/<id> -> 200', async () => {
+    Mock.API.Success.OK('get', [{ name: 'name', amount: 1, type: [] }]);
 
-    const response = await Transaction.findOne('id');
+    const response = await API.Transaction.findOne('1');
 
-    expect(response).toEqual({ status: 200, data: { name: 'name', amount: 0, type: [] } });
+    expect(response).toEqual({ status: 200, data: { name: 'name', amount: 1, type: [] } });
   });
 
-  it('GET /transaction/id -> 500', async () => {
-    jest.spyOn(axios, 'get').mockRejectedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
-    });
+  it('.findOne: GET /transaction/<id> -> 404', async () => {
+    Mock.API.Error.NotFound('get');
 
-    const response = await Transaction.findOne('id');
+    const response = await API.Transaction.findOne('1');
 
-    expect(response).toEqual({ status: 500, data: { reason: 'Internal server error' } });
+    expect(response).toEqual({ status: 404, data: { reason: 'Resource could not be found' } });
   });
 
-  it('POST /transaction/update/id -> 200', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValueOnce({
-      status: 200,
-      data: { transactions: [{ name: 'name', amount: 0, type: [] }] }
-    });
+  it('.findMany: POST /transaction/find -> 200', async () => {
+    Mock.API.Success.OK('post', [
+      {
+        transactions: [{ id: '1', name: 'name', amount: 1, type: [] }]
+      }
+    ]);
 
-    const response = await Transaction.findMany(['id']);
+    const response = await API.Transaction.findMany(['1']);
 
     expect(response).toEqual({
       status: 200,
-      data: { transactions: [{ name: 'name', amount: 0, type: [] }] }
+      data: { transactions: [{ id: '1', name: 'name', amount: 1, type: [] }] }
     });
   });
 
-  it('POST /transaction/update/id -> 500', async () => {
-    jest.spyOn(axios, 'post').mockRejectedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
+  it('.findMany: POST /transaction/find -> 401', async () => {
+    Mock.API.Error.Unauthorized('post');
+
+    const response = await API.Transaction.findMany(['1']);
+
+    expect(response).toEqual({
+      status: 401,
+      data: { reason: 'User is unauthorized to perform this action' }
     });
-
-    const response = await Transaction.findMany(['id']);
-
-    expect(response).toEqual({ status: 500, data: { reason: 'Internal server error' } });
   });
 
-  it('DELETE /transaction/id -> 200', async () => {
-    jest.spyOn(axios, 'delete').mockResolvedValueOnce({
-      status: 200,
-      data: { reason: 'Transaction has been deleted' }
-    });
+  it('.deleteOne: DELETE /transaction/<id> -> 200', async () => {
+    Mock.API.Success.OK('delete');
+    store.dispatch(Transaction.actions.set([{ id: '1', name: 'name' }]));
 
-    const response = await Transaction.deleteOne('id');
+    const response = await API.Transaction.deleteOne('1');
 
-    expect(response).toEqual({ status: 200, data: { reason: 'Transaction has been deleted' } });
+    expect(response).toEqual({ status: 200 });
+    expect(State.current.transactions).toEqual([]);
   });
 
-  it('DELETE /transaction/id -> 500', async () => {
-    jest.spyOn(axios, 'delete').mockRejectedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
+  it('.deleteOne: DELETE /transaction/<id> -> 401', async () => {
+    Mock.API.Error.Unauthorized('delete');
+    store.dispatch(Transaction.actions.set([{ id: '1', name: 'name' }]));
+
+    const response = await API.Transaction.deleteOne('1');
+
+    expect(response).toEqual({
+      status: 401,
+      data: { reason: 'User is unauthorized to perform this action' }
     });
-
-    const response = await Transaction.deleteOne('id');
-
-    expect(response).toEqual({ status: 500, data: { reason: 'Internal server error' } });
+    expect(State.current.transactions).toEqual([{ id: '1', name: 'name' }]);
   });
 });

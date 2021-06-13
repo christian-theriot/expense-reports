@@ -1,4 +1,4 @@
-import { TransactionType } from '../store';
+import store, { TransactionType, User, Transaction as TransactionStore } from '../store';
 import axios from 'axios';
 
 export namespace Transaction {
@@ -20,8 +20,14 @@ export namespace Transaction {
         { withCredentials: true }
       );
 
+      store.dispatch(User.actions.addTransaction(response.data.id));
+      store.dispatch(
+        TransactionStore.actions.add({ id: response.data.id, name, amount, type, date })
+      );
+
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log({ err });
       return { status: err.response.status, data: err.response.data };
     }
   }
@@ -46,8 +52,19 @@ export namespace Transaction {
         { withCredentials: true }
       );
 
+      store.dispatch(
+        TransactionStore.actions.update({
+          id,
+          name,
+          amount,
+          type,
+          date
+        })
+      );
+
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log({ err });
       return { status: err.response.status, data: err.response.data };
     }
   }
@@ -58,6 +75,7 @@ export namespace Transaction {
 
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log({ err });
       return { status: err.response.status, data: err.response.data };
     }
   }
@@ -68,6 +86,7 @@ export namespace Transaction {
 
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log({ err });
       return { status: err.response.status, data: err.response.data };
     }
   }
@@ -76,8 +95,11 @@ export namespace Transaction {
     try {
       const response = await axios.delete(`/transaction/${id}`, { withCredentials: true });
 
+      store.dispatch(TransactionStore.actions.remove(id));
+
       return { status: response.status, data: response.data };
     } catch (err) {
+      console.log({ err });
       return { status: err.response.status, data: err.response.data };
     }
   }

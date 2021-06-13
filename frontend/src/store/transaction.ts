@@ -9,7 +9,21 @@ export const Transaction = createSlice({
       state.splice(0, state.length, ...action.payload);
     },
     add(state, action) {
-      state.push(action.payload);
+      const idx = state.findIndex(txa => txa.id === action.payload.id);
+      if (idx !== -1) {
+        if (action.payload.name) {
+          state[idx].name = action.payload.name;
+        }
+
+        if (action.payload.amount) {
+          state[idx].amount = action.payload.amount;
+        }
+
+        state[idx].date = action.payload.date;
+        state[idx].type = action.payload.type;
+      } else {
+        state.push(action.payload);
+      }
     },
     remove(state, action) {
       const idx = state.findIndex(txa => txa.id === action.payload);

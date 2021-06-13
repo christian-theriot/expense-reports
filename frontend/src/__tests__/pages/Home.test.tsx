@@ -3,36 +3,46 @@ import { Home } from '../../pages';
 import store, { Transaction } from '../../store';
 import userEvent from '@testing-library/user-event';
 
+const renderHome = () => {
+  const home = renderComponent(<Home />);
+  const cancel = home.queryByLabelText('cancel create') as HTMLButtonElement | null;
+  const createNew = home.queryByLabelText('create new transaction') as HTMLButtonElement | null;
+  const view = home.getByLabelText('transaction dashboard') as HTMLTableElement;
+
+  return { home, cancel, createNew, view };
+};
+
 describe('Home page', () => {
-  beforeEach(() => jest.restoreAllMocks());
-
-  it('Renders the New... button by default', () => {
-    const { component } = renderComponent(<Home />);
-    const newButton = component.getByLabelText('create new transaction');
-
-    expect(newButton).toBeInTheDocument();
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
   });
 
-  it('Renders the create page on clicking the button', async () => {
-    const { component } = renderComponent(<Home />);
-    const newButton = component.getByLabelText('create new transaction');
+  it("Renders a button labeled 'create new transaction ' by default", () => {
+    const { cancel, createNew, view } = renderHome();
 
-    userEvent.click(newButton);
-
-    await waitFor(() => expect(component.getByLabelText('cancel create')).toBeInTheDocument());
+    expect(cancel).not.toBeInTheDocument();
+    expect(createNew).toBeInTheDocument();
+    expect(view).toBeInTheDocument();
   });
 
-  it('Renders the New... button when clicking cancel', async () => {
-    const { component } = renderComponent(<Home />);
-    let newButton = component.getByLabelText('create new transaction');
+  it('Clicking the create transaction button shows the page', () => {
+    const { createNew, home } = renderHome();
 
-    userEvent.click(newButton);
+    userEvent.click(createNew!);
 
-    const cancelButton = component.getByLabelText('cancel create');
+    expect(home.getByLabelText('cancel create')).toBeInTheDocument();
+  });
 
-    userEvent.click(cancelButton);
+  it('Clicking the cancel button will display the create transaction button again', () => {
+    const { createNew, home } = renderHome();
 
-    newButton = component.getByLabelText('create new transaction');
-    await waitFor(() => expect(newButton).toBeInTheDocument());
+    userEvent.click(createNew!);
+
+    const cancel = home.getByLabelText('cancel create');
+
+    userEvent.click(cancel);
+
+    expect(home.queryByLabelText('cancel create')).not.toBeInTheDocument();
   });
 });

@@ -1,109 +1,75 @@
-import userEvent from '@testing-library/user-event';
+import { Mock, renderComponent, waitFor } from '../utils';
 import { Register } from '../../pages';
-import axios from 'axios';
-import { renderComponent, waitFor } from '../utils';
+import store, { State, Transaction, User } from '../../store';
+import userEvent from '@testing-library/user-event';
 
-const renderRegister = (path: string = '/register', test?: { history?: any; location?: any }) => {
-  const { component } = renderComponent(<Register />, path, test);
+const renderRegister = () => {
+  const output: { location?: any } = { location: undefined };
+  const register = renderComponent(<Register />, '/register', output);
+  const username = register.getByLabelText('username') as HTMLInputElement;
+  const password = register.getByLabelText('password') as HTMLInputElement;
+  const confirmPassword = register.getByLabelText('confirm password') as HTMLInputElement;
+  const signUp = register.getByLabelText('sign up') as HTMLButtonElement;
 
-  const username = component.getByLabelText('username') as HTMLInputElement;
-  const password = component.getByLabelText('password') as HTMLInputElement;
-  const confirmPassword = component.getByLabelText('confirm password') as HTMLInputElement;
-  const signUp = component.getByLabelText('sign up') as HTMLButtonElement;
-
-  return { register: component, username, password, confirmPassword, signUp };
+  return { register, username, password, confirmPassword, signUp, output };
 };
 
 describe('Register page', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.spyOn(console, 'log').mockImplementation();
-    jest.spyOn(axios, 'get').mockRejectedValue({
-      response: { status: 401, data: { reason: 'User is unauthorized to perform this action' } }
-    });
-  });
-  afterEach(() => jest.restoreAllMocks());
-
-  it('Renders by default', () => {
-    const { register } = renderRegister();
-
-    expect(register).toBeDefined();
+    Mock.API.Error.Unauthorized('get');
+    Mock.API.Error.Unauthorized('post');
+    store.dispatch(User.actions.clear());
+    store.dispatch(Transaction.actions.clear());
   });
 
-  it('Renders with username field', () => {
+  it("Renders input fields labeled 'username', 'password', 'confirm password', and 'sign up'", () => {
+    const { username, password, confirmPassword, signUp } = renderRegister();
+
+    [username, password, confirmPassword, signUp].forEach(element =>
+      expect(element).toBeInTheDocument()
+    );
+  });
+
+  it('Accepts user input', () => {
     const { username } = renderRegister();
 
-    expect(username).toBeDefined();
+    userEvent.type(username, 'user');
+
+    expect(username.value).toBe('user');
   });
 
-  it('Renders with password field', () => {
-    const { password } = renderRegister();
-
-    expect(password).toBeDefined();
-  });
-
-  it('Renders with confirmPassword field', () => {
-    const { confirmPassword } = renderRegister();
-
-    expect(confirmPassword).toBeDefined();
-  });
-
-  it('Renders with submit button', () => {
-    const { signUp } = renderRegister();
-
-    expect(signUp).toBeDefined();
-  });
-
-  it('Can accept a value for username', () => {
-    const { username } = renderRegister();
-
-    userEvent.type(username, 'username');
-
-    expect(username.value).toBe('username');
-  });
-
-  it('Can click the submit button', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValueOnce({
-      response: { status: 500, data: { reason: 'Internal server error' } }
-    });
-
-    let test: { location?: any } = { location: undefined };
-    const { signUp } = renderRegister('/register', test);
+  it('Clicking sign up with valid inputs redirects to /login', async () => {
+    Mock.API.Success.CreatedResource('post', [{ id: 'id' }]);
+    const { signUp, output } = renderRegister();
 
     userEvent.click(signUp);
 
-    await waitFor(() => expect(test.location.pathname).toBe('/register'));
+    await waitFor(() => expect(output.location.pathname).toBe('/login'));
   });
 
-  it('Can click the submit button with valid values', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValueOnce({ status: 201, data: { id: 'id' } });
+  it('Redirects to / if a user is already logged in', async () => {
+    Mock.API.Success.OK('get', [{ id: 'id', username: 'user', transactions: ['id'] }]);
+    Mock.API.Success.OK('post', [{ transactions: [{ id: 'id', name: 'name' }] }]);
+    const { output } = renderRegister();
 
-    let test: { location?: any } = { location: undefined };
-    const { username, password, confirmPassword, signUp } = renderRegister('/register', test);
+    await waitFor(() => {
+      expect(output.location.pathname).toBe('/');
+      expect(State.current.transactions).toEqual([{ id: 'id', name: 'name' }]);
+      expect(State.current.user).toEqual({ id: 'id', username: 'user', transactions: ['id'] });
+    });
+  });
 
-    userEvent.type(username, 'username');
-    userEvent.type(password, 'password');
-    userEvent.type(confirmPassword, 'password');
+  it('Does not redirect to /login if the inputs are invalid', async () => {
+    const { signUp, output } = renderRegister();
+
     userEvent.click(signUp);
 
-    await waitFor(() => expect(test.location.pathname).toBe('/login'));
-  });
-
-  it('Redirects to / if a user session already exists', async () => {
-    jest.spyOn(axios, 'get').mockResolvedValue({
-      status: 200,
-      data: { id: 'id', username: 'user', transactions: [] }
+    await waitFor(() => {
+      expect(output.location.pathname).toBe('/register');
+      expect(State.current.transactions).toEqual([]);
+      expect(State.current.user).toEqual({ id: '', username: '', transactions: [] });
     });
-
-    let test: { location?: any } = { location: undefined };
-    renderRegister('/register', test);
-
-    await waitFor(() => expect(test.location.pathname).toBe('/'));
-  });
-
-  it('Does not redirect if a user session does not already exist', async () => {
-    let test: { location?: any } = { location: undefined };
-    renderRegister('/register', test);
-
-    await waitFor(() => expect(test.location.pathname).toBe('/register'));
   });
 });

@@ -1,80 +1,66 @@
+import { Mock, renderComponent, waitFor } from '../../utils';
+import { Create } from '../../../pages';
+import store, { State, Transaction, User } from '../../../store';
 import userEvent from '@testing-library/user-event';
-import { Create } from '../../../pages/transaction';
-import store from '../../../store';
-import { renderComponent, waitFor } from '../../utils';
-import axios from 'axios';
 
-const renderCreateView = () => {
-  const hidden: { value: boolean } = { value: false };
-  let onHide = () => {
-    hidden.value = true;
+const renderCreate = () => {
+  let hidden_ = false;
+  const output = {
+    hide: () => (hidden_ = true),
+    hidden: () => hidden_
   };
 
-  const { component } = renderComponent(<Create hide={onHide} />);
-
-  const date = component.getByLabelText('date') as HTMLInputElement;
-  const name = component.getByLabelText('name') as HTMLInputElement;
-  const amount = component.getByLabelText('amount') as HTMLInputElement;
-  const type = component.getByLabelText('type') as HTMLSelectElement;
-  const create = component.getByLabelText('create transaction') as HTMLButtonElement;
-  const cancel = component.getByLabelText('cancel create') as HTMLButtonElement;
+  const create = renderComponent(<Create hide={output.hide} />);
+  const date = create.getByLabelText('date') as HTMLInputElement;
+  const name = create.getByLabelText('name') as HTMLInputElement;
+  const amount = create.getByLabelText('amount') as HTMLInputElement;
+  const type = create.getByLabelText('type') as HTMLSelectElement;
+  const button = {
+    create: create.getByLabelText('create transaction') as HTMLButtonElement,
+    cancel: create.getByLabelText('cancel create') as HTMLButtonElement
+  };
 
   return {
-    view: component,
+    create,
     transaction: {
       date,
       name,
       amount,
       type
     },
-    create,
-    cancel,
-    hidden
+    button,
+    output
   };
 };
 
-describe('Create Transaction page', () => {
-  beforeEach(() =>
-    jest
-      .spyOn(axios, 'post')
-      .mockRejectedValue({ response: { status: 500, data: { reason: 'Internal server error' } } })
-  );
-  afterEach(() => jest.restoreAllMocks());
+describe('Create transaction page', () => {
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    jest.spyOn(console, 'log').mockImplementation();
+    store.dispatch(Transaction.actions.clear());
+    store.dispatch(User.actions.clear());
+  });
 
-  it('Renders with a date field', () => {
-    const { transaction } = renderCreateView();
+  it("Renders inputs labeled 'date', 'name', 'amount', and 'type'", () => {
+    const { transaction, output } = renderCreate();
 
+    [transaction.date, transaction.name, transaction.amount, transaction.type].forEach(element =>
+      expect(element).toBeInTheDocument()
+    );
     expect(transaction.date).toBeInTheDocument();
+    expect(output.hidden()).toBeFalsy();
   });
 
-  it('Renders with a name field', () => {
-    const { transaction } = renderCreateView();
-
-    expect(transaction.name).toBeInTheDocument();
-  });
-
-  it('Renders with an amount field', () => {
-    const { transaction } = renderCreateView();
-
-    expect(transaction.amount).toBeInTheDocument();
-  });
-
-  it('Renders with a type field', () => {
-    const { transaction } = renderCreateView();
-
-    expect(transaction.type).toBeInTheDocument();
-  });
-
-  it('Can accept a value for date', () => {
-    const { transaction } = renderCreateView();
+  it('Accepts user input', () => {
+    const { transaction } = renderCreate();
 
     userEvent.type(transaction.date, '2021-06-01');
 
     expect(transaction.date.value).toBe('2021-06-01');
   });
 
-  it('Can accept multiple values for type', () => {
-    const { transaction } = renderCreateView();
+  it('Accepts multiple options in type', () => {
+    const { transaction } = renderCreate();
 
     userEvent.selectOptions(transaction.type, ['Rent', 'Subscription']);
 
@@ -84,46 +70,55 @@ describe('Create Transaction page', () => {
     ]);
   });
 
-  it('Can click the create transaction button', async () => {
-    const initialStore = store.getState();
-    const { transaction, create } = renderCreateView();
+  it('Can click the create button, and amount should be NaN', () => {
+    jest.spyOn(global, 'parseFloat');
+    const { button } = renderCreate();
 
+    userEvent.click(button.create);
+    expect(parseFloat).toReturnWith(NaN);
+  });
+
+  it('Can click the create button, calling API.Transaction.create', async () => {
+    Mock.API.Success.CreatedResource('post', [{ id: 'id', name: 'name' }]);
+    const { transaction, button } = renderCreate();
+
+    userEvent.type(transaction.name, 'name');
+    userEvent.type(transaction.amount, '1');
     userEvent.type(transaction.date, '2021-06-01');
-    userEvent.type(transaction.amount, '');
-    userEvent.click(create);
+    userEvent.selectOptions(transaction.type, ['Rent']);
 
-    await waitFor(() => expect(store.getState()).toEqual(initialStore));
+    await waitFor(() => {
+      userEvent.click(button.create);
+
+      expect(transaction.name.value).toBe('');
+      expect(transaction.amount.value).toBe('');
+      expect(State.current.transactions).toEqual([
+        { id: 'id', name: 'name', amount: 1, type: ['Rent'], date: '2021-06-01' }
+      ]);
+      expect(State.current.user.transactions).toEqual(['id']);
+    });
   });
 
-  it('Can click the create transaction button with valid values', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValue({ status: 201, data: { id: 'id' } });
-
-    const initialStore = store.getState();
-    const { transaction, create } = renderCreateView();
+  it('Can click the create button, receiving an error', async () => {
+    Mock.API.Error.Unauthorized('post');
+    const { transaction, button } = renderCreate();
 
     userEvent.type(transaction.name, 'name');
     userEvent.type(transaction.amount, '1');
-    userEvent.click(create);
 
-    await waitFor(() => expect(store.getState()).not.toEqual(initialStore));
+    await waitFor(() => {
+      userEvent.click(button.create);
+
+      expect(transaction.name).not.toBe('');
+      expect(transaction.amount).not.toBe('');
+    });
   });
 
-  it('Can click the create transaction button with valid values but fail the API call', async () => {
-    const initialStore = store.getState();
-    const { transaction, create } = renderCreateView();
+  it('Can click the cancel button, calling props.hide', () => {
+    const { button, output } = renderCreate();
 
-    userEvent.type(transaction.name, 'name');
-    userEvent.type(transaction.amount, '1');
-    userEvent.click(create);
+    userEvent.click(button.cancel);
 
-    await waitFor(() => expect(store.getState()).toEqual(initialStore));
-  });
-
-  it('Can click the cancel button, which calls the hide prop', async () => {
-    const { hidden, cancel } = renderCreateView();
-
-    userEvent.click(cancel);
-
-    await waitFor(() => expect(hidden.value).toBeTruthy());
+    expect(output.hidden()).toBeTruthy();
   });
 });

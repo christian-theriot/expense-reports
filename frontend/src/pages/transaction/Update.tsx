@@ -56,15 +56,8 @@ export function Update(props: IUpdateProps) {
 
     if (response.status === 200) {
       console.log(response);
-      dispatch(
-        Transaction.actions.update({
-          id: props.id,
-          name: transaction.name,
-          amount,
-          date,
-          type: transaction.type as TransactionType[]
-        })
-      );
+
+      props.hide();
     }
   };
 

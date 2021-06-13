@@ -15,9 +15,6 @@ export const Login = withRouter(function Login(props) {
     API.User.session().then(res => {
       console.log(res);
       if (res.status === 200) {
-        dispatch(User.actions.setId(res.data.id));
-        dispatch(User.actions.setUsername(res.data.username));
-        dispatch(User.actions.setTransactions(res.data.transactions));
         props.history.push('/');
       }
     });
@@ -37,10 +34,6 @@ export const Login = withRouter(function Login(props) {
     console.log(data);
 
     if (status === 200) {
-      dispatch(User.actions.setId(data.id));
-      dispatch(User.actions.setUsername(data.username));
-      dispatch(User.actions.setTransactions(data.transactions));
-
       props.history.push('/');
     }
   };

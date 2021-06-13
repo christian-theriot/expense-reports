@@ -1,69 +1,94 @@
-import store, { Transaction, State } from '../../store';
+import store, { State, Transaction } from '../../store';
 
 describe('Transaction store', () => {
-  beforeAll(() => {
-    store.dispatch(Transaction.actions.set([]));
+  beforeAll(() => jest.restoreAllMocks());
+  beforeEach(() => store.dispatch(Transaction.actions.clear()));
+
+  it('Has a set action', () => {
+    const initialStore = State.current.transactions;
+
+    store.dispatch(Transaction.actions.set([{}]));
+
+    expect(initialStore).not.toEqual(State.current.transactions);
   });
 
-  afterAll(() => {
-    store.dispatch(Transaction.actions.set([]));
-  });
-
-  it('Can set transactions', () => {
-    expect(State.current.transactions).toEqual([]);
-
-    store.dispatch(Transaction.actions.set([{ id: 'id', name: 'name', amount: 0, type: [] }]));
-
-    expect(State.current.transactions).toEqual([{ id: 'id', name: 'name', amount: 0, type: [] }]);
-  });
-
-  it('Can add a transaction', () => {
-    store.dispatch(Transaction.actions.add({ id: 'id-2', name: 'name', amount: 0, type: [] }));
+  it('Has an add action', () => {
+    store.dispatch(Transaction.actions.add({ id: '1', name: 'name', amount: 1, type: [] }));
 
     expect(State.current.transactions).toEqual([
-      { id: 'id', name: 'name', amount: 0, type: [] },
-      { id: 'id-2', name: 'name', amount: 0, type: [] }
+      {
+        id: '1',
+        name: 'name',
+        amount: 1,
+        type: []
+      }
     ]);
   });
 
-  it('Can remove a transaction', () => {
-    store.dispatch(Transaction.actions.remove('id-2'));
+  it('The add action can update existing values', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
+    const initialStore = State.current.transactions;
 
-    expect(State.current.transactions).toEqual([{ id: 'id', name: 'name', amount: 0, type: [] }]);
+    store.dispatch(Transaction.actions.add({ id: '1', amount: 1 }));
+
+    expect(initialStore.length).toBe(State.current.transactions.length);
+    expect(State.current.transactions[0]).toEqual({ id: '1', amount: 1 });
   });
 
-  it("Can call remove even if the transaction doesn't exist", () => {
-    store.dispatch(Transaction.actions.remove('id-2'));
+  it('The add action can update partial values', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
+    const initialStore = State.current.transactions;
 
-    expect(State.current.transactions).toEqual([{ id: 'id', name: 'name', amount: 0, type: [] }]);
+    store.dispatch(Transaction.actions.add({ id: '1', name: 'name' }));
+
+    expect(initialStore.length).toBe(State.current.transactions.length);
+    expect(State.current.transactions[0]).toEqual({ id: '1', name: 'name' });
   });
 
-  it('Can clear transactions', () => {
-    store.dispatch(Transaction.actions.clear());
+  it('Has a remove action', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
+    const initialStore = State.current.transactions;
 
-    expect(State.current.transactions).toEqual([]);
+    store.dispatch(Transaction.actions.remove('1'));
+
+    expect(initialStore.length - 1).toBe(State.current.transactions.length);
   });
 
-  it('Can update name', () => {
-    store.dispatch(Transaction.actions.set([{ id: 1, name: 'name', amount: 1 }]));
-    store.dispatch(Transaction.actions.update({ id: 1, name: 'new name' }));
+  it('Remove does nothing given an invalid id', () => {
+    const initialStore = State.current.transactions;
 
-    expect(State.current.transactions).toEqual([{ id: 1, name: 'new name', amount: 1 }]);
+    store.dispatch(Transaction.actions.remove('1'));
+
+    expect(initialStore).toEqual(State.current.transactions);
   });
 
-  it('Can update other values', () => {
-    store.dispatch(Transaction.actions.set([{ id: 1, name: 'name' }]));
-    store.dispatch(Transaction.actions.update({ id: 1, amount: 1, date: '2021-06-01', type: [] }));
-
-    expect(State.current.transactions).toEqual([
-      { id: 1, name: 'name', amount: 1, date: '2021-06-01', type: [] }
-    ]);
+  it('Has a clear action', () => {
+    expect(State.current.transactions.length).toBe(0);
   });
 
-  it('Can fail to update any transaction', () => {
-    store.dispatch(Transaction.actions.clear());
-    store.dispatch(Transaction.actions.update({ id: 1 }));
+  it('Has an update action', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
+    const initialStore = State.current.transactions;
 
-    expect(State.current.transactions).toEqual([]);
+    store.dispatch(Transaction.actions.update({ id: '1', name: 'name' }));
+
+    expect(initialStore).not.toEqual(State.current.transactions);
+  });
+
+  it('Update can modify partial values', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1' }]));
+    const initialStore = State.current.transactions;
+
+    store.dispatch(Transaction.actions.update({ id: '1', amount: 1 }));
+
+    expect(initialStore).not.toEqual(State.current.transactions);
+  });
+
+  it('Update does nothing given an invalid id', () => {
+    const initialStore = State.current.transactions;
+
+    store.dispatch(Transaction.actions.update({ id: '1', name: 'name' }));
+
+    expect(initialStore).toEqual(State.current.transactions);
   });
 });

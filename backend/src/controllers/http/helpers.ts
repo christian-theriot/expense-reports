@@ -51,7 +51,7 @@ export async function userOwnsTransaction(req: Request, res: Response, id: strin
     return false;
   }
 
-  if (!user.transactions.find(txa => txa === id)) {
+  if (!user.transactions.some(transaction => transaction === id)) {
     Error.Unauthorized(res);
     return false;
   }
@@ -67,7 +67,7 @@ export async function userOwnsTransactions(req: Request, res: Response, transact
   }
 
   if (transactions.some(id => !user.transactions.some(txa => txa === id))) {
-    Error.Unauthorized(res, { reason: 'User is unauthorized to perform this action' });
+    Error.Unauthorized(res);
     return false;
   }
 

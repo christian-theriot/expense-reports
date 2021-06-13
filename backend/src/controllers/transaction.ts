@@ -44,6 +44,7 @@ export namespace Transaction {
       const user = await Models.User.findById(req.user!._id);
       if (user) {
         user.transactions.push(transaction._id);
+        await user.save();
       }
 
       HTTP.Success.CreatedResource(res, { id: transaction!._id });
@@ -61,6 +62,8 @@ export namespace Transaction {
       type,
       date
     }: { name?: string; amount?: number; type?: TransactionType[]; date?: string } = req.body;
+
+    console.log({ id, name, amount, type, date, user: req.user });
 
     if (name && !HTTP.validField(res, name, 'name', 'string')) {
       return next();

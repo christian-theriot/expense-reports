@@ -16,11 +16,7 @@ export const Register = withRouter(function Register(props) {
 
   useEffect(() => {
     API.User.session().then(res => {
-      console.log(res);
       if (res.status === 200) {
-        dispatch(User.actions.setId(res.data.id));
-        dispatch(User.actions.setUsername(res.data.username));
-        dispatch(User.actions.setTransactions(res.data.transactions));
         props.history.push('/');
       }
     });
@@ -37,7 +33,6 @@ export const Register = withRouter(function Register(props) {
     e.preventDefault();
 
     const { status, data } = await API.User.register(user.username, user.password);
-    console.log(data);
 
     if (status === 201) {
       props.history.push('/login');

@@ -44,22 +44,18 @@ export function Create(props: ICreateProps) {
 
     const response = await API.Transaction.create({
       name: transaction.name,
-      amount: parseFloat(transaction.amount),
+      amount,
       type: transaction.type as TransactionType[],
       date
     });
 
     if (response.status === 201) {
-      console.log(response);
-      dispatch(
-        Transaction.actions.add({
-          id: response.data.id,
-          name: transaction.name,
-          amount,
-          type: transaction.type as TransactionType[],
-          date
-        })
-      );
+      // clear the input which is most likely to be unique
+      setTransaction({
+        ...transaction,
+        name: '',
+        amount: ''
+      });
     }
   };
 

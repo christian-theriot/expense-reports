@@ -16,6 +16,7 @@ describe('Transaction controller', () => {
     }).save();
   });
 
+  beforeEach(() => jest.spyOn(console, 'log').mockImplementation());
   afterEach(() => jest.restoreAllMocks());
 
   afterAll(async () => {

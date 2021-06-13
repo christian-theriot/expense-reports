@@ -1,197 +1,73 @@
+import { Mock, renderComponent, waitFor } from '../../utils';
+import { View } from '../../../pages';
+import store, { State, Transaction, User } from '../../../store';
 import userEvent from '@testing-library/user-event';
-import { View } from '../../../pages/transaction';
-import store, { Transaction, TransactionType } from '../../../store';
-import { renderComponent, waitFor } from '../../utils';
 
 const renderView = () => {
-  const { component } = renderComponent(<View />);
+  const view = renderComponent(<View />);
+  const table = view.queryByLabelText('transaction dashboard') as HTMLTableElement | null;
+  const viewTxa0 = view.queryByLabelText('view-txa-0') as HTMLTableRowElement | null;
+  const update = view.queryByLabelText('update') as HTMLButtonElement | null;
+  const cancel = view.queryByLabelText('cancel update') as HTMLButtonElement | null;
 
-  return { view: component };
+  return { view, table, viewTxa0, update, cancel };
 };
 
-describe('View Transactions page', () => {
+describe('View transactions page', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     store.dispatch(
       Transaction.actions.set([
-        {
-          date: '2021-06-01',
-          name: 'Rent Payment',
-          amount: -1877,
-          type: [TransactionType.Rent]
-        }
+        { id: '1', name: 'name', amount: 1, type: ['Rent', 'Subscription'] }
       ])
     );
   });
-  afterEach(() => jest.restoreAllMocks());
 
-  it('Renders nothing if no transaction is present', () => {
+  it("Renders a table labeled 'transaction dashboard'", () => {
+    const { table } = renderView();
+
+    expect(table).toBeInTheDocument();
+  });
+
+  it("Renders a row labeled 'view-txa-0'", () => {
+    const { viewTxa0 } = renderView();
+
+    expect(viewTxa0).toBeInTheDocument();
+  });
+
+  it("Renders a button labeled 'update'", () => {
+    const { update } = renderView();
+
+    expect(update).toBeInTheDocument();
+  });
+
+  it('Can click the update button, which switches the row to an update transaction page', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1', date: '2021-06-01' }]));
+    const { view, update } = renderView();
+
+    userEvent.click(update!);
+
+    expect(view.getByLabelText('cancel update')).toBeInTheDocument();
+  });
+
+  it('Clicking cancel switches the row back to a read-only representation', () => {
+    store.dispatch(Transaction.actions.set([{ id: '1', date: '2021-06-01' }]));
+    const { view, update } = renderView();
+
+    userEvent.click(update!);
+
+    const cancel = view.getByLabelText('cancel update');
+
+    userEvent.click(cancel);
+
+    expect(view.queryByLabelText('cancel update')).not.toBeInTheDocument();
+  });
+
+  it("Renders 'No transactions to display at this time' when there are no transactions", () => {
     store.dispatch(Transaction.actions.clear());
 
-    const { view } = renderView();
-    const table = view.queryByLabelText('transaction dashboard');
+    const { table, viewTxa0, update, cancel } = renderView();
 
-    expect(table).not.toBeInTheDocument();
-  });
-
-  it('Renders each transaction with an identifying label', () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          date: '2021-06-01',
-          name: 'Rent Payment',
-          type: ['Rent'],
-          amount: -1800
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    const transactionRow = view.getByLabelText('view-txa-0');
-    const transaction = {
-      date: transactionRow.children.item(0)?.textContent,
-      name: transactionRow.children.item(1)?.textContent,
-      amount: transactionRow.children.item(2)?.textContent,
-      type: transactionRow.children.item(3)?.textContent
-    };
-
-    expect(transactionRow).toBeInTheDocument();
-    expect(transaction).toEqual({
-      date: '2021-06-01',
-      name: 'Rent Payment',
-      amount: '-1800',
-      type: 'Rent'
-    });
-  });
-
-  it('Renders date as pending if undefined', () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          name: 'Spotify Premium',
-          amount: -5,
-          type: ['Entertainment']
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    const transactionRow = view.getByLabelText('view-txa-0');
-    const transaction = {
-      date: transactionRow.children.item(0)?.textContent,
-      name: transactionRow.children.item(1)?.textContent,
-      amount: transactionRow.children.item(2)?.textContent,
-      type: transactionRow.children.item(3)?.textContent
-    };
-
-    expect(transactionRow).toBeInTheDocument();
-    expect(transaction).toEqual({
-      date: 'Pending',
-      name: 'Spotify Premium',
-      amount: '-5',
-      type: 'Entertainment'
-    });
-  });
-
-  it('Renders multiple types as a comma-separated string', () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          name: 'Spotify Premium',
-          amount: -5,
-          type: ['Entertainment', 'Subscription']
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    const transactionRow = view.getByLabelText('view-txa-0');
-    const transaction = {
-      date: transactionRow.children.item(0)?.textContent,
-      name: transactionRow.children.item(1)?.textContent,
-      amount: transactionRow.children.item(2)?.textContent,
-      type: transactionRow.children.item(3)?.textContent
-    };
-
-    expect(transactionRow).toBeInTheDocument();
-    expect(transaction).toEqual({
-      date: 'Pending',
-      name: 'Spotify Premium',
-      amount: '-5',
-      type: 'Entertainment, Subscription'
-    });
-  });
-
-  it('Renders type as empty if undefined', () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          name: 'No type',
-          amount: 1
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    const transactionRow = view.getByLabelText('view-txa-0');
-    const transaction = {
-      date: transactionRow.children.item(0)?.textContent,
-      name: transactionRow.children.item(1)?.textContent,
-      amount: transactionRow.children.item(2)?.textContent,
-      type: transactionRow.children.item(3)?.textContent
-    };
-
-    expect(transactionRow).toBeInTheDocument();
-    expect(transaction).toEqual({
-      date: 'Pending',
-      name: 'No type',
-      amount: '1',
-      type: ''
-    });
-  });
-
-  it('Clicking the update button shows the Update Transaction view', async () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          name: 'name',
-          amount: 1
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    const updateButton = view.getByLabelText('update');
-
-    userEvent.click(updateButton);
-
-    await waitFor(() => expect(view.getByLabelText('cancel update')).toBeInTheDocument());
-  });
-
-  it('Clicking the cancel button shows the normal view again', async () => {
-    store.dispatch(
-      Transaction.actions.set([
-        {
-          id: '1',
-          name: 'name',
-          amount: 1
-        }
-      ])
-    );
-
-    const { view } = renderView();
-    let updateButton = view.getByLabelText('update');
-
-    userEvent.click(updateButton);
-
-    const cancelButton = view.getByLabelText('cancel update');
-
-    userEvent.click(cancelButton);
-
-    await waitFor(() => expect(view.getByLabelText('update')).toBeInTheDocument());
+    [table, viewTxa0, update, cancel].forEach(element => expect(element).not.toBeInTheDocument());
   });
 });

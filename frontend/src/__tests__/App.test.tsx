@@ -1,36 +1,38 @@
-import { renderComponent } from './utils';
+import { Mock, renderComponent, waitFor } from './utils';
 import App from '../App';
-import axios from 'axios';
 
-describe('App', () => {
+const renderApp = (path: string = '/') => {
+  const app = renderComponent(<App />, path);
+
+  const home = app.queryByLabelText('create new transaction');
+  const login = app.queryByLabelText('sign in');
+  const register = app.queryByLabelText('sign up');
+
+  return { app, home, login, register };
+};
+
+describe('App component', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.spyOn(console, 'log').mockImplementation();
-    jest.spyOn(axios, 'get').mockResolvedValue({ status: 401, data: {} });
+    Mock.API.Error.Unauthorized('get');
   });
-  afterEach(() => jest.restoreAllMocks());
 
-  it('Renders nothing at /', () => {
-    const { component } = renderComponent(<App />);
-    const [signIn, signUp] = [
-      component.queryByLabelText('sign in'),
-      component.queryByLabelText('sign up')
-    ];
+  it('Renders the home page at /', () => {
+    const { home } = renderApp();
 
-    expect(signIn).not.toBeInTheDocument();
-    expect(signUp).not.toBeInTheDocument();
+    expect(home).toBeInTheDocument();
   });
 
   it('Renders the login page at /login', () => {
-    const { component } = renderComponent(<App />, '/login');
-    const signIn = component.getByLabelText('sign in');
+    const { login } = renderApp('/login');
 
-    expect(signIn).toBeDefined();
+    expect(login).toBeInTheDocument();
   });
 
   it('Renders the register page at /register', () => {
-    const { component } = renderComponent(<App />, '/register');
-    const signUp = component.getByLabelText('sign up');
+    const { register } = renderApp('/register');
 
-    expect(signUp).toBeDefined();
+    expect(register).toBeInTheDocument();
   });
 });

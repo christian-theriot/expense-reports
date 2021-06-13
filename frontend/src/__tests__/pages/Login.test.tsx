@@ -1,101 +1,78 @@
-import userEvent from '@testing-library/user-event';
+import { Mock, renderComponent, waitFor } from '../utils';
 import { Login } from '../../pages';
-import axios from 'axios';
-import { renderComponent, waitFor } from '../utils';
+import store, { State, Transaction, User } from '../../store';
+import userEvent from '@testing-library/user-event';
 
-const renderLogin = (path: string = '/login', test?: { history?: any; location?: any }) => {
-  const { component } = renderComponent(<Login />, path, test);
+const renderLogin = () => {
+  const output: { location?: any } = { location: undefined };
+  const login = renderComponent(<Login />, '/login', output);
+  const username = login.getByLabelText('username') as HTMLInputElement;
+  const password = login.getByLabelText('password') as HTMLInputElement;
+  const signIn = login.getByLabelText('sign in') as HTMLButtonElement;
 
-  const username = component.getByLabelText('username') as HTMLInputElement;
-  const password = component.getByLabelText('password') as HTMLInputElement;
-  const signIn = component.getByLabelText('sign in');
-
-  return { login: component, username, password, signIn };
+  return { login, username, password, signIn, output };
 };
 
 describe('Login page', () => {
   beforeEach(() => {
+    jest.restoreAllMocks();
     jest.spyOn(console, 'log').mockImplementation();
-    jest.spyOn(axios, 'get').mockRejectedValue({
-      response: { status: 401, data: { reason: 'User is unauthorized to perform this action' } }
-    });
-  });
-  afterEach(() => jest.restoreAllMocks());
-
-  it('Renders by default', () => {
-    const { login } = renderLogin();
-
-    expect(login).toBeDefined();
+    Mock.API.Error.Unauthorized('get');
+    Mock.API.Error.Unauthorized('post');
+    store.dispatch(User.actions.clear());
+    store.dispatch(Transaction.actions.clear());
   });
 
-  it('Renders with username field', () => {
+  it("Renders input fields labeled 'username', 'password', and 'sign in'", () => {
+    const { username, password, signIn } = renderLogin();
+    [username, password, signIn].forEach(element => expect(element).toBeInTheDocument());
+  });
+
+  it('Accepts user input', () => {
     const { username } = renderLogin();
 
-    expect(username).toBeDefined();
+    userEvent.type(username, 'user');
+
+    expect(username.value).toBe('user');
   });
 
-  it('Renders with password field', () => {
-    const { password } = renderLogin();
-
-    expect(password).toBeDefined();
-  });
-
-  it('Renders with submit button', () => {
-    const { signIn } = renderLogin();
-
-    expect(signIn).toBeDefined();
-  });
-
-  it('Can accept a value for username', () => {
-    const { username } = renderLogin();
-
-    userEvent.type(username, 'username');
-
-    expect(username.value).toBe('username');
-  });
-
-  it('Can click the submit button', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValue({
-      response: { status: 500, data: { reason: 'Internal server error' } }
-    });
-
-    let test: { location?: any } = { location: undefined };
-    const { signIn } = renderLogin('/login', test);
+  it('Clicking sign up with valid inputs redirects to /', async () => {
+    Mock.API.Success.OK('post', [
+      { id: 'id', username: 'user', transactions: ['id'] },
+      { transactions: [{ id: 'id', name: 'name' }] }
+    ]);
+    const { signIn, output } = renderLogin();
 
     userEvent.click(signIn);
 
-    await waitFor(() => expect(test.location.pathname).toBe('/login'));
+    await waitFor(() => {
+      expect(output.location.pathname).toBe('/');
+      expect(State.current.transactions).toEqual([{ id: 'id', name: 'name' }]);
+      expect(State.current.user).toEqual({ id: 'id', username: 'user', transactions: ['id'] });
+    });
   });
 
-  it('Can click the submit button with valid values', async () => {
-    jest.spyOn(axios, 'post').mockResolvedValue({ status: 200, data: { id: 'id' } });
+  it('Redirects to / if a user is already logged in', async () => {
+    Mock.API.Success.OK('get', [{ id: 'id', username: 'user', transactions: ['id'] }]);
+    Mock.API.Success.OK('post', [{ transactions: [{ id: 'id', name: 'name' }] }]);
+    const { output } = renderLogin();
 
-    let test: { location?: any } = { location: undefined };
-    const { username, password, signIn } = renderLogin('/login', test);
+    await waitFor(() => {
+      expect(output.location.pathname).toBe('/');
+      expect(State.current.transactions).toEqual([{ id: 'id', name: 'name' }]);
+      expect(State.current.user).toEqual({ id: 'id', username: 'user', transactions: ['id'] });
+    });
+  });
 
-    userEvent.type(username, 'username');
-    userEvent.type(password, 'password');
+  it('Does not redirect to / if the inputs are invalid', async () => {
+    const { signIn, output } = renderLogin();
+
     userEvent.click(signIn);
 
-    await waitFor(() => expect(test.location.pathname).toBe('/'));
-  });
-
-  it('Redirects to / if a user session already exists', async () => {
-    jest.spyOn(axios, 'get').mockResolvedValue({
-      status: 200,
-      data: { id: 'id', username: 'user', transactions: [] }
+    await waitFor(() => {
+      expect(output.location.pathname).toBe('/login');
+      expect(State.current.transactions).toEqual([]);
+      expect(State.current.user).toEqual({ id: '', username: '', transactions: [] });
     });
-
-    let test: { location?: any } = { location: undefined };
-    renderLogin('/login', test);
-
-    await waitFor(() => expect(test.location.pathname).toBe('/'));
-  });
-
-  it('Does not redirect if a user session does not already exist', async () => {
-    let test: { location?: any } = { location: undefined };
-    renderLogin('/login', test);
-
-    await waitFor(() => expect(test.location.pathname).toBe('/login'));
   });
 });

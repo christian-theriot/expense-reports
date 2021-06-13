@@ -1,148 +1,131 @@
+import { Mock, renderComponent, waitFor } from '../../utils';
+import { Update } from '../../../pages';
+import store, { State, Transaction, User } from '../../../store';
 import userEvent from '@testing-library/user-event';
-import { Update } from '../../../pages/transaction';
-import store, { Transaction } from '../../../store';
-import { renderComponent, waitFor } from '../../utils';
-import axios from 'axios';
 
-const renderUpdateView = (id: string) => {
-  const hidden: { value: boolean } = { value: false };
-  let onHide = () => {
-    hidden.value = true;
+const renderUpdate = (id: string) => {
+  let hidden_ = false;
+  const output = {
+    hide: () => (hidden_ = true),
+    hidden: () => hidden_
   };
 
-  const { component } = renderComponent(
+  const update = renderComponent(
     <table>
       <tbody>
-        <Update id={id} hide={onHide} />
+        <Update id={id} hide={output.hide} />
       </tbody>
     </table>
   );
-
-  const date = component.queryByLabelText('date') as HTMLInputElement;
-  const name = component.queryByLabelText('name') as HTMLInputElement;
-  const amount = component.queryByLabelText('amount') as HTMLInputElement;
-  const type = component.queryByLabelText('type') as HTMLSelectElement;
-  const update = component.queryByLabelText('update transaction') as HTMLButtonElement;
-  const cancel = component.queryByLabelText('cancel update') as HTMLButtonElement;
+  const date = update.queryByLabelText('date') as HTMLInputElement | null;
+  const name = update.queryByLabelText('name') as HTMLInputElement | null;
+  const amount = update.queryByLabelText('amount') as HTMLInputElement | null;
+  const type = update.queryByLabelText('type') as HTMLSelectElement | null;
+  const button = {
+    update: update.queryByLabelText('update transaction') as HTMLButtonElement | null,
+    cancel: update.getByLabelText('cancel update') as HTMLButtonElement
+  };
 
   return {
-    view: component,
+    update,
     transaction: {
       date,
       name,
       amount,
       type
     },
-    update,
-    cancel,
-    hidden
+    button,
+    output
   };
 };
 
-describe('Update Transaction page', () => {
+describe('Update transaction page', () => {
   beforeEach(() => {
-    jest
-      .spyOn(axios, 'post')
-      .mockRejectedValue({ response: { status: 500, data: { reason: 'Internal server error' } } });
-    store.dispatch(Transaction.actions.set([{ id: '1', name: 'name', amount: 1 }]));
-  });
-  afterEach(() => jest.restoreAllMocks());
-
-  it("Renders nothing if the id doesn't exist in the store", () => {
-    store.dispatch(Transaction.actions.clear());
-
-    const { transaction } = renderUpdateView('invalid');
-
-    expect(transaction.date).not.toBeInTheDocument();
+    jest.restoreAllMocks();
+    jest.spyOn(console, 'log').mockImplementation();
+    store.dispatch(Transaction.actions.set([{ id: 'id' }]));
   });
 
-  it('Renders with a date field', () => {
-    store.dispatch(Transaction.actions.update({ id: '1', date: '2021-06-01' }));
-    const { transaction } = renderUpdateView('1');
+  it("Renders inputs labeled 'date', 'name', 'amount', and 'type'", () => {
+    const { transaction, output } = renderUpdate('id');
 
-    expect(transaction.date).toBeInTheDocument();
+    [transaction.date, transaction.name, transaction.amount, transaction.type].forEach(element =>
+      expect(element).toBeInTheDocument()
+    );
+    expect(output.hidden()).toBeFalsy();
   });
 
-  it('Renders with a name field', () => {
-    const { transaction } = renderUpdateView('1');
+  it('Accepts user input', () => {
+    const { transaction } = renderUpdate('id');
 
-    expect(transaction.name).toBeInTheDocument();
+    userEvent.type(transaction.amount!, '1');
+
+    expect(transaction.amount!.value).toBe('1');
   });
 
-  it('Renders with a amount field', () => {
-    const { transaction } = renderUpdateView('1');
+  it('Accepts multiple options in type', () => {
+    const { transaction } = renderUpdate('id');
 
-    expect(transaction.amount).toBeInTheDocument();
-  });
+    userEvent.selectOptions(transaction.type!, ['Rent', 'Subscription']);
 
-  it('Renders with a type field', () => {
-    const { transaction } = renderUpdateView('1');
-
-    expect(transaction.type).toBeInTheDocument();
-  });
-
-  it('Can accept a value for date', () => {
-    const { transaction } = renderUpdateView('1');
-
-    userEvent.type(transaction.date, '2021-06-01');
-
-    expect(transaction.date.value).toBe('2021-06-01');
-  });
-
-  it('Can accept multiple values for type', () => {
-    const { transaction } = renderUpdateView('1');
-
-    userEvent.selectOptions(transaction.type, ['Rent', 'Subscription']);
-
-    expect(Array.from(transaction.type.selectedOptions, option => option.value)).toEqual([
+    expect(Array.from(transaction.type!.selectedOptions, option => option.value)).toEqual([
       'Rent',
       'Subscription'
     ]);
   });
 
-  it('Can click the update transaction button', async () => {
-    store.dispatch(Transaction.actions.set([{ id: '1', name: 'name' }]));
+  it('Can click the update button, and amount should be NaN', () => {
+    jest.spyOn(global, 'isNaN');
+    const { button } = renderUpdate('id');
 
-    const initialStore = store.getState();
-    const { transaction, update } = renderUpdateView('1');
+    userEvent.click(button.update!);
 
-    userEvent.type(transaction.date, '2021-06-01');
-    userEvent.click(update);
-
-    await waitFor(() => expect(store.getState()).toEqual(initialStore));
+    expect(global.isNaN).toBeCalledWith(NaN);
   });
 
-  it('Can click the update transaction button with valid values', async () => {
-    jest
-      .spyOn(axios, 'post')
-      .mockResolvedValue({ status: 200, data: { reason: 'Transaction has been updated' } });
+  it('Can click the update button, calling API.Transaction.update', async () => {
+    Mock.API.Success.OK('post');
+    const { transaction, button, output } = renderUpdate('id');
 
-    const initialStore = store.getState();
-    const { transaction, update } = renderUpdateView('1');
+    userEvent.type(transaction.amount!, '1');
+    userEvent.type(transaction.date!, '2021-06-01');
 
-    userEvent.type(transaction.name, 'name');
-    userEvent.type(transaction.amount, '1');
-    userEvent.click(update);
+    await waitFor(() => {
+      userEvent.click(button.update!);
 
-    await waitFor(() => expect(store.getState()).not.toEqual(initialStore));
+      expect(output.hidden()).toBeTruthy();
+      expect(State.current.transactions).toEqual([
+        { id: 'id', amount: 1, date: '2021-06-01', type: [] }
+      ]);
+    });
   });
 
-  it('Can click the update transaction button with valid values but fail the API call', async () => {
-    const initialStore = store.getState();
-    const { transaction, update } = renderUpdateView('1');
+  it('Can click the update button, receiving an error', async () => {
+    store.dispatch(Transaction.actions.set([{ id: 'id', name: 'name', amount: '1' }]));
+    Mock.API.Error.Unauthorized('post');
+    const { button, output } = renderUpdate('id');
 
-    userEvent.type(transaction.name, 'name');
-    userEvent.type(transaction.amount, '1');
-    userEvent.click(update);
+    await waitFor(() => {
+      userEvent.click(button.update!);
 
-    await waitFor(() => expect(store.getState()).toEqual(initialStore));
+      expect(output.hidden()).toBeFalsy();
+      expect(State.current.transactions).toEqual([{ id: 'id', name: 'name', amount: '1' }]);
+    });
   });
 
-  it('Can click the cancel button, which calls the hide prop', async () => {
-    const { hidden, cancel } = renderUpdateView('1');
+  it('Can click the cancel button, calling props.hide', () => {
+    const { button, output } = renderUpdate('id');
 
-    userEvent.click(cancel);
+    userEvent.click(button.cancel);
 
-    await waitFor(() => expect(hidden.value).toBeTruthy());
+    expect(output.hidden()).toBeTruthy();
+  });
+
+  it('Renders transaction does not exist and cancel button when an invalid id is given', () => {
+    store.dispatch(Transaction.actions.clear());
+    const { button } = renderUpdate('invalid');
+
+    expect(button.update).not.toBeInTheDocument();
+    expect(button.cancel).toBeInTheDocument();
   });
 });

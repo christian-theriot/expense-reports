@@ -16,6 +16,8 @@ describe('User controller', () => {
     }).save();
   });
 
+  beforeEach(() => jest.spyOn(console, 'log').mockImplementation());
+
   afterAll(async () => {
     await Models.User.deleteMany({});
     await Database.disconnect();
