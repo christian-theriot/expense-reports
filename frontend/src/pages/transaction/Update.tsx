@@ -1,7 +1,7 @@
 import { ChangeEvent, MouseEvent, useState } from 'react';
-import { Transaction, TransactionType, TRANSACTION_TYPES } from '../../store';
+import { TransactionType, TRANSACTION_TYPES } from '../../store';
 import * as API from '../../api';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { IState } from '../../store';
 
 export interface IUpdateProps {
@@ -24,7 +24,6 @@ export function Update(props: IUpdateProps) {
     amount: reference && reference.amount ? `${reference.amount}` : '',
     type: reference && reference.type ? reference.type : []
   });
-  const dispatch = useDispatch();
 
   const onChange = (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>,

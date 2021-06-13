@@ -2,7 +2,6 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { withRouter } from 'react-router';
 import * as API from '../api';
 import { useDispatch } from 'react-redux';
-import { User } from '../store';
 
 export const Login = withRouter(function Login(props) {
   const [user, setUser] = useState<{ username: string; password: string }>({

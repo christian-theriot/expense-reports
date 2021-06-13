@@ -1,7 +1,6 @@
 import { ChangeEvent, MouseEvent, useState } from 'react';
-import { Transaction, TransactionType, TRANSACTION_TYPES } from '../../store';
+import { TransactionType, TRANSACTION_TYPES } from '../../store';
 import * as API from '../../api';
-import { useDispatch } from 'react-redux';
 
 export interface ICreateProps {
   hide: () => void;
@@ -19,7 +18,6 @@ export function Create(props: ICreateProps) {
     amount: '',
     type: []
   });
-  const dispatch = useDispatch();
 
   const onChange = (
     e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>,

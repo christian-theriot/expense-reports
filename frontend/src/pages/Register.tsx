@@ -2,7 +2,6 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { withRouter } from 'react-router';
 import * as API from '../api';
 import { useDispatch } from 'react-redux';
-import { User } from '../store';
 
 export const Register = withRouter(function Register(props) {
   const [user, setUser] = useState<{ username: string; password: string; confirmPassword: string }>(
@@ -32,7 +31,7 @@ export const Register = withRouter(function Register(props) {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const { status, data } = await API.User.register(user.username, user.password);
+    const { status } = await API.User.register(user.username, user.password);
 
     if (status === 201) {
       props.history.push('/login');
